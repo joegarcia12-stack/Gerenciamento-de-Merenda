@@ -179,7 +179,8 @@ async def create_class(class_data: ClassCreate, current_user: User = Depends(get
     return new_class
 
 @api_router.get("/classes", response_model=List[Class])
-async def get_classes(current_user: User = Depends(get_current_user)):
+async def get_classes():
+    # Public endpoint for registration - no auth required
     classes = await db.classes.find({}, {"_id": 0}).to_list(1000)
     return classes
 
