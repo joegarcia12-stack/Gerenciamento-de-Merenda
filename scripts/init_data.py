@@ -32,20 +32,20 @@ async def init_database():
     await db.users.insert_one(admin_user)
     print("✅ Usuário admin criado (username: admin, password: admin123)")
     
-    # Criar 12 turmas
+    # Criar 12 turmas (sem grade e shift)
     classes_data = [
-        {"name": "Turma 100", "grade": "1º Ano", "shift": "manhã"},
-        {"name": "Turma 101", "grade": "1º Ano", "shift": "tarde"},
-        {"name": "Turma 102", "grade": "2º Ano", "shift": "manhã"},
-        {"name": "Turma 103", "grade": "2º Ano", "shift": "tarde"},
-        {"name": "Turma 200", "grade": "3º Ano", "shift": "manhã"},
-        {"name": "Turma 201", "grade": "3º Ano", "shift": "tarde"},
-        {"name": "Turma 202", "grade": "4º Ano", "shift": "manhã"},
-        {"name": "Turma 203", "grade": "4º Ano", "shift": "tarde"},
-        {"name": "Turma 300", "grade": "5º Ano", "shift": "manhã"},
-        {"name": "Turma 301", "grade": "5º Ano", "shift": "tarde"},
-        {"name": "Turma 302", "grade": "6º Ano", "shift": "manhã"},
-        {"name": "Turma 303", "grade": "6º Ano", "shift": "tarde"},
+        {"name": "Turma 100"},
+        {"name": "Turma 101"},
+        {"name": "Turma 102"},
+        {"name": "Turma 103"},
+        {"name": "Turma 200"},
+        {"name": "Turma 201"},
+        {"name": "Turma 202"},
+        {"name": "Turma 203"},
+        {"name": "Turma 300"},
+        {"name": "Turma 301"},
+        {"name": "Turma 302"},
+        {"name": "Turma 303"},
     ]
     
     print("\n📚 Criando 12 turmas e líderes...")
@@ -56,8 +56,6 @@ async def init_database():
         class_doc = {
             "id": class_id,
             "name": class_data["name"],
-            "grade": class_data["grade"],
-            "shift": class_data["shift"],
             "leader_user_id": None
         }
         await db.classes.insert_one(class_doc)

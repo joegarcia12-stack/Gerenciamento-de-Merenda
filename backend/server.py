@@ -60,14 +60,10 @@ class Class(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    grade: str
-    shift: str  # "manhã" or "tarde"
     leader_user_id: Optional[str] = None
 
 class ClassCreate(BaseModel):
     name: str
-    grade: str
-    shift: str
 
 class DailyCount(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -86,8 +82,6 @@ class DailyCountResponse(BaseModel):
     id: str
     class_id: str
     class_name: str
-    grade: str
-    shift: str
     date: str
     count: int
     updated_at: datetime
@@ -96,7 +90,6 @@ class DashboardSummary(BaseModel):
     date: str
     total_meals: int
     total_classes: int
-    counts_by_shift: dict
     class_details: List[DailyCountResponse]
 
 # Helper functions
@@ -240,8 +233,6 @@ async def get_today_counts(current_user: User = Depends(get_current_user)):
                 id=count["id"],
                 class_id=count["class_id"],
                 class_name=class_info["name"],
-                grade=class_info["grade"],
-                shift=class_info["shift"],
                 date=count["date"],
                 count=count["count"],
                 updated_at=count["updated_at"]
@@ -276,8 +267,6 @@ async def get_counts_history(
                 "id": count["id"],
                 "class_id": count["class_id"],
                 "class_name": class_info["name"],
-                "grade": class_info["grade"],
-                "shift": class_info["shift"],
                 "date": count["date"],
                 "count": count["count"],
                 "updated_at": count["updated_at"].isoformat()
@@ -299,21 +288,17 @@ async def get_dashboard_summary(target_date: Optional[str] = None, current_user:
     total_meals = sum(c["count"] for c in counts)
     total_classes = len(counts)
     
-    counts_by_shift = {"manhã": 0, "tarde": 0}
     class_details = []
     
     for count in counts:
         class_info = await db.classes.find_one({"id": count["class_id"]}, {"_id": 0})
         if class_info:
-            counts_by_shift[class_info["shift"]] += count["count"]
             if isinstance(count['updated_at'], str):
                 count['updated_at'] = datetime.fromisoformat(count['updated_at'])
             class_details.append(DailyCountResponse(
                 id=count["id"],
                 class_id=count["class_id"],
                 class_name=class_info["name"],
-                grade=class_info["grade"],
-                shift=class_info["shift"],
                 date=count["date"],
                 count=count["count"],
                 updated_at=count["updated_at"]
@@ -323,9 +308,18 @@ async def get_dashboard_summary(target_date: Optional[str] = None, current_user:
         date=target_date,
         total_meals=total_meals,
         total_classes=total_classes,
-        counts_by_shift=counts_by_shift,
         class_details=class_details
     )
+
+@api_router.post("/admin/reset-database")
+async def reset_database(current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can reset database")
+    
+    # Delete all daily counts
+    await db.daily_counts.delete_many({})
+    
+    return {"message": "Database reset successfully. All meal counts have been cleared."}
 
 app.include_router(api_router)
 
