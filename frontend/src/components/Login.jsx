@@ -14,6 +14,8 @@ const Login = ({ onLogin }) => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
+
   useEffect(() => {
     if (isRegister && role === 'leader') {
       fetchAvailableClasses();
@@ -106,8 +108,8 @@ const Login = ({ onLogin }) => {
     <div className="login-container" data-testid="login-container">
       <div className="login-card" style={{ maxWidth: isRegister ? '500px' : '440px' }}>
         <div className="login-header">
-          <div className="login-icon">
-            {isRegister ? <UserPlus size={40} color="white" /> : <LogIn size={40} color="white" />}
+          <div className="login-logo">
+            <img src={logoUrl} alt="IEMA Pleno Matões" style={{ width: '100%', maxWidth: '200px' }} />
           </div>
           <h1>{isRegister ? 'Criar Conta' : 'Contagem de Alunos'}</h1>
           <p>Sistema de Gerenciamento de Merenda</p>
@@ -221,7 +223,7 @@ const Login = ({ onLogin }) => {
                       <option value="">Selecione uma turma</option>
                       {classes.map((cls) => (
                         <option key={cls.id} value={cls.id}>
-                          {cls.name} - {cls.grade} - {cls.shift}
+                          {cls.name}
                         </option>
                       ))}
                     </select>

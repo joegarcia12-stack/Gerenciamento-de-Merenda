@@ -75,8 +75,8 @@ const LeaderDashboard = ({ onLogout }) => {
         <div>
           <h1>Painel do Líder</h1>
           {classInfo && (
-            <p style={{ color: '#00838F', marginTop: '0.5rem' }}>
-              {classInfo.name} - {classInfo.grade} - Turno: {classInfo.shift}
+            <p style={{ color: '#00838F', marginTop: '0.5rem', fontSize: '1.1rem' }}>
+              {classInfo.name}
             </p>
           )}
         </div>
