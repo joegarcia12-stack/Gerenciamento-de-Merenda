@@ -34,18 +34,18 @@ async def init_database():
     
     # Criar 12 turmas
     classes_data = [
-        {"name": "Turma 1A", "grade": "1º Ano", "shift": "manhã"},
-        {"name": "Turma 1B", "grade": "1º Ano", "shift": "tarde"},
-        {"name": "Turma 2A", "grade": "2º Ano", "shift": "manhã"},
-        {"name": "Turma 2B", "grade": "2º Ano", "shift": "tarde"},
-        {"name": "Turma 3A", "grade": "3º Ano", "shift": "manhã"},
-        {"name": "Turma 3B", "grade": "3º Ano", "shift": "tarde"},
-        {"name": "Turma 4A", "grade": "4º Ano", "shift": "manhã"},
-        {"name": "Turma 4B", "grade": "4º Ano", "shift": "tarde"},
-        {"name": "Turma 5A", "grade": "5º Ano", "shift": "manhã"},
-        {"name": "Turma 5B", "grade": "5º Ano", "shift": "tarde"},
-        {"name": "Turma 6A", "grade": "6º Ano", "shift": "manhã"},
-        {"name": "Turma 6B", "grade": "6º Ano", "shift": "tarde"},
+        {"name": "Turma 100", "grade": "1º Ano", "shift": "manhã"},
+        {"name": "Turma 101", "grade": "1º Ano", "shift": "tarde"},
+        {"name": "Turma 102", "grade": "2º Ano", "shift": "manhã"},
+        {"name": "Turma 103", "grade": "2º Ano", "shift": "tarde"},
+        {"name": "Turma 200", "grade": "3º Ano", "shift": "manhã"},
+        {"name": "Turma 201", "grade": "3º Ano", "shift": "tarde"},
+        {"name": "Turma 202", "grade": "4º Ano", "shift": "manhã"},
+        {"name": "Turma 203", "grade": "4º Ano", "shift": "tarde"},
+        {"name": "Turma 300", "grade": "5º Ano", "shift": "manhã"},
+        {"name": "Turma 301", "grade": "5º Ano", "shift": "tarde"},
+        {"name": "Turma 302", "grade": "6º Ano", "shift": "manhã"},
+        {"name": "Turma 303", "grade": "6º Ano", "shift": "tarde"},
     ]
     
     print("\n📚 Criando 12 turmas e líderes...")
