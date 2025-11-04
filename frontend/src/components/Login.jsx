@@ -108,8 +108,8 @@ const Login = ({ onLogin }) => {
     <div className="login-container" data-testid="login-container">
       <div className="login-card" style={{ maxWidth: isRegister ? '500px' : '440px' }}>
         <div className="login-header">
-          <div className="login-logo">
-            <img src={logoUrl} alt="IEMA Pleno Matões" style={{ width: '100%', maxWidth: '200px' }} />
+          <div className="login-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <img src={logoUrl} alt="IEMA Pleno Matões" style={{ width: '100%', maxWidth: '180px' }} />
           </div>
           <h1>{isRegister ? 'Criar Conta' : 'Contagem de Alunos'}</h1>
           <p>Sistema de Gerenciamento de Merenda</p>
