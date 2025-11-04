@@ -234,6 +234,31 @@ h1, h2, h3, h4, h5, h6 {
   border-color: #4DD0E1;
 }
 
+.reset-button {
+  background: linear-gradient(135deg, #EF5350 0%, #E53935 100%);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(239, 83, 80, 0.3);
+}
+
+.reset-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(239, 83, 80, 0.4);
+}
+
+.reset-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .dashboard-content {
   display: grid;
   gap: 2rem;
