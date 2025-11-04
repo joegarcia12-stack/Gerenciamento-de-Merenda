@@ -83,6 +83,7 @@ const LeaderDashboard = ({ onLogout }) => {
           )}
         </div>
         <div className="user-info">
+          <img src={logoUrl} alt="IEMA" style={{ height: '40px', marginRight: '1rem' }} />
           <span className="user-badge" data-testid="username-display">{username}</span>
           <button
             className="logout-button"
