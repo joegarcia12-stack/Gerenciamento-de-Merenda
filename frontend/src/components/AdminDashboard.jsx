@@ -75,6 +75,7 @@ const AdminDashboard = ({ onLogout }) => {
       <div className="dashboard-header">
         <h1>Painel de Gestão Escolar</h1>
         <div className="user-info">
+          <img src={logoUrl} alt="IEMA" style={{ height: '40px', marginRight: '1rem' }} />
           <span className="user-badge" data-testid="admin-username-display">{username}</span>
           <button
             className="logout-button"
