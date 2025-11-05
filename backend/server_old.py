@@ -124,55 +124,34 @@ async def root():
 
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
-    try:
-        # Check if user exists
-        existing = await db.users.find_one({"username": user_data.username})
-        if existing:
-            raise HTTPException(status_code=400, detail="Username already exists")
-        
-        # Validate class_id if leader
-        if user_data.role == "leader" and user_data.class_id:
-            class_exists = await db.classes.find_one({"id": user_data.class_id})
-            if not class_exists:
-                raise HTTPException(status_code=400, detail="Invalid class ID")
-        
-        user = User(
-            username=user_data.username,
-            password_hash=get_password_hash(user_data.password),
-            role=user_data.role,
-            class_id=user_data.class_id if user_data.role == "leader" else None
-        )
-        
-        await db.users.insert_one(user.model_dump())
-        return {"message": "User created successfully", "id": user.id}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Error creating user: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error creating user")
+    # Check if user exists
+    existing = await db.users.find_one({"username": user_data.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    user = User(
+        username=user_data.username,
+        password_hash=get_password_hash(user_data.password),
+        role=user_data.role,
+        class_id=user_data.class_id
+    )
+    
+    await db.users.insert_one(user.model_dump())
+    return {"message": "User created successfully", "id": user.id}
 
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
-    try:
-        user = await db.users.find_one({"username": login_data.username}, {"_id": 0})
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        if not verify_password(login_data.password, user["password_hash"]):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        token = create_access_token({"sub": user["id"], "role": user["role"]})
-        return LoginResponse(
-            token=token,
-            role=user["role"],
-            username=user["username"],
-            class_id=user.get("class_id")
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Login error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Login error")
+    user = await db.users.find_one({"username": login_data.username}, {"_id": 0})
+    if not user or not verify_password(login_data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    token = create_access_token({"sub": user["id"], "role": user["role"]})
+    return LoginResponse(
+        token=token,
+        role=user["role"],
+        username=user["username"],
+        class_id=user.get("class_id")
+    )
 
 @api_router.get("/auth/me")
 async def get_me(current_user: User = Depends(get_current_user)):
@@ -338,27 +317,9 @@ async def reset_database(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only admins can reset database")
     
     # Delete all daily counts
-    result = await db.daily_counts.delete_many({})
+    await db.daily_counts.delete_many({})
     
-    return {"message": f"Database reset successfully. {result.deleted_count} meal counts have been cleared."}
-
-@api_router.post("/admin/reset-user-accounts")
-async def reset_user_accounts(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can reset user accounts")
-    
-    # Delete all users except admin
-    result = await db.users.delete_many({"role": {"$ne": "admin"}})
-    
-    return {"message": f"User accounts reset successfully. {result.deleted_count} user accounts have been deleted."}
-
-@api_router.get("/admin/users")
-async def get_all_users(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can view users")
-    
-    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
-    return users
+    return {"message": "Database reset successfully. All meal counts have been cleared."}
 
 app.include_router(api_router)
 
