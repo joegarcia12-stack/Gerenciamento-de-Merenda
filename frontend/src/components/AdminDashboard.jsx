@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
-import { Users, Calendar, LogOut, RefreshCw, Trash2 } from 'lucide-react';
+import { Users, Calendar, LogOut, RefreshCw, Trash2, Bell, UserX } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,13 +20,25 @@ const AdminDashboard = ({ onLogout }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [showNotification, setShowNotification] = useState(true);
   const username = localStorage.getItem('username');
   
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
   useEffect(() => {
     fetchSummary();
+    checkDailyNotification();
   }, [selectedDate]);
+
+  const checkDailyNotification = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastNotification = localStorage.getItem('lastNotification');
+    
+    if (lastNotification !== today) {
+      setShowNotification(true);
+      localStorage.setItem('lastNotification', today);
+    }
+  };
 
   const fetchSummary = async () => {
     setLoading(true);
@@ -61,6 +73,20 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
 
+  const handleResetUserAccounts = async () => {
+    setResetting(true);
+    try {
+      const response = await axios.post(`${API}/admin/reset-user-accounts`, {}, {
+        headers: getAuthHeaders()
+      });
+      toast.success(response.data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao resetar contas de usuários');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('pt-BR', {
@@ -88,6 +114,18 @@ const AdminDashboard = ({ onLogout }) => {
         </div>
       </div>
 
+      {showNotification && summary && summary.total_classes < 12 && (
+        <div className="notification-banner" data-testid="notification-banner">
+          <Bell size={20} />
+          <span>
+            Atenção! {12 - summary.total_classes} turma(s) ainda não registraram a contagem de hoje.
+          </span>
+          <button onClick={() => setShowNotification(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+            ×
+          </button>
+        </div>
+      )}
+
       <div className="dashboard-content">
         <div className="content-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -111,6 +149,7 @@ const AdminDashboard = ({ onLogout }) => {
                   <RefreshCw size={20} />
                 </button>
               </div>
+              
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
@@ -119,12 +158,12 @@ const AdminDashboard = ({ onLogout }) => {
                     disabled={resetting}
                   >
                     <Trash2 size={18} style={{ marginRight: '0.5rem' }} />
-                    {resetting ? 'Zerando...' : 'Zerar Banco'}
+                    {resetting ? 'Zerando...' : 'Zerar Refeições'}
                   </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar Limpeza do Banco de Dados</AlertDialogTitle>
+                    <AlertDialogTitle>Confirmar Limpeza de Refeições</AlertDialogTitle>
                     <AlertDialogDescription>
                       Esta ação irá deletar TODAS as contagens de refeições registradas.
                       Os usuários e turmas serão mantidos. Esta ação não pode ser desfeita.
@@ -133,7 +172,35 @@ const AdminDashboard = ({ onLogout }) => {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={handleResetDatabase}>
-                      Sim, Zerar Banco
+                      Sim, Zerar Refeições
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className="reset-users-button"
+                    data-testid="reset-users-button"
+                    disabled={resetting}
+                  >
+                    <UserX size={18} style={{ marginRight: '0.5rem' }} />
+                    {resetting ? 'Resetando...' : 'Resetar Contas'}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar Reset de Contas de Usuários</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação irá deletar TODAS as contas de usuários (exceto a conta admin).
+                      Os líderes de turma precisarão se cadastrar novamente. Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleResetUserAccounts}>
+                      Sim, Resetar Contas
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
