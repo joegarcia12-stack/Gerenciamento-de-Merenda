@@ -92,6 +92,36 @@ class DashboardSummary(BaseModel):
     total_classes: int
     class_details: List[DailyCountResponse]
 
+class WeeklyMenu(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    week_start: str  # YYYY-MM-DD (Monday)
+    monday: dict  # {"breakfast": str, "lunch": str, "snack": str}
+    tuesday: dict
+    wednesday: dict
+    thursday: dict
+    friday: dict
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class WeeklyMenuCreate(BaseModel):
+    week_start: str
+    monday: dict
+    tuesday: dict
+    wednesday: dict
+    thursday: dict
+    friday: dict
+
+class WeeklyMenuResponse(BaseModel):
+    id: str
+    week_start: str
+    monday: dict
+    tuesday: dict
+    wednesday: dict
+    thursday: dict
+    friday: dict
+    updated_at: datetime
+
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
