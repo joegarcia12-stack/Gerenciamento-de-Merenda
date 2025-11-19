@@ -805,6 +805,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
 .queue-display-header h2 {
@@ -817,6 +818,17 @@ h1, h2, h3, h4, h5, h6 {
 .queue-display-header p {
   color: #00838F;
   margin: 0.5rem 0 0 0;
+}
+
+.queue-info-badge {
+  background: linear-gradient(135deg, #FFE082 0%, #FFD54F 100%);
+  color: #F57F17;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
 }
 
 .queue-table-wrapper {
