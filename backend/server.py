@@ -128,6 +128,17 @@ class GalleryPhotoCreate(BaseModel):
     url: str
     caption: Optional[str] = None
 
+class QueueSchedule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    week_start: str  # YYYY-MM-DD (Monday)
+    schedule: dict  # {"monday": {"queue1": {"breakfast": [], "lunch": [], "snack": []}, "queue2": {...}}, ...}
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class QueueScheduleCreate(BaseModel):
+    week_start: str
+    schedule: dict
+
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
