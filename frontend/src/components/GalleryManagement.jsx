@@ -18,8 +18,10 @@ import {
 const GalleryManagement = ({ onBack }) => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' or 'url'
   const [photoUrl, setPhotoUrl] = useState('');
   const [caption, setCaption] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [adding, setAdding] = useState(false);
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
