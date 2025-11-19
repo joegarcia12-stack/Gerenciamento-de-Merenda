@@ -111,6 +111,17 @@ class WeeklyMenuCreate(BaseModel):
     thursday: dict
     friday: dict
 
+class GalleryPhoto(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    url: str
+    caption: Optional[str] = None
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GalleryPhotoCreate(BaseModel):
+    url: str
+    caption: Optional[str] = None
+
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
