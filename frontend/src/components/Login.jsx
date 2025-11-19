@@ -4,8 +4,8 @@ import { API } from '../App';
 import { toast } from 'sonner';
 import { User, Lock, LogIn, UserPlus, GraduationCap } from 'lucide-react';
 
-const Login = ({ onLogin }) => {
-  const [isRegister, setIsRegister] = useState(false);
+const Login = ({ onLogin, initialMode = 'login', onClose }) => {
+  const [isRegister, setIsRegister] = useState(initialMode === 'register');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
