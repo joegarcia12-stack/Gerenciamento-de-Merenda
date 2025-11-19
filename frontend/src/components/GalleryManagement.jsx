@@ -142,24 +142,63 @@ const GalleryManagement = ({ onBack }) => {
       <div className="dashboard-content">
         <div className="content-card">
           <h2 style={{ marginBottom: '1.5rem' }}>Adicionar Nova Foto</h2>
+          
+          <div className="upload-method-selector" style={{ marginBottom: '1.5rem' }}>
+            <button
+              className={`method-button ${uploadMethod === 'file' ? 'active' : ''}`}
+              onClick={() => setUploadMethod('file')}
+              data-testid="upload-method-file"
+            >
+              📤 Upload de Arquivo
+            </button>
+            <button
+              className={`method-button ${uploadMethod === 'url' ? 'active' : ''}`}
+              onClick={() => setUploadMethod('url')}
+              data-testid="upload-method-url"
+            >
+              🔗 URL da Imagem
+            </button>
+          </div>
+
           <div className="add-photo-form">
-            <div className="form-group">
-              <label>URL da Foto</label>
-              <input
-                type="url"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                placeholder="https://exemplo.com/foto.jpg"
-                data-testid="photo-url-input"
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  border: '2px solid #B2EBF2',
-                  borderRadius: '12px',
-                  fontSize: '1rem'
-                }}
-              />
-            </div>
+            {uploadMethod === 'file' ? (
+              <div className="form-group">
+                <label>Selecionar Imagem</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  data-testid="photo-file-input"
+                  className="file-input"
+                />
+                {selectedFile && (
+                  <div className="file-preview">
+                    <p>📷 {selectedFile.name}</p>
+                    <p style={{ fontSize: '0.85rem', color: '#00838F' }}>
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="form-group">
+                <label>URL da Foto</label>
+                <input
+                  type="url"
+                  value={photoUrl}
+                  onChange={(e) => setPhotoUrl(e.target.value)}
+                  placeholder="https://exemplo.com/foto.jpg"
+                  data-testid="photo-url-input"
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem',
+                    border: '2px solid #B2EBF2',
+                    borderRadius: '12px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            )}
             <div className="form-group">
               <label>Legenda (Opcional)</label>
               <input
