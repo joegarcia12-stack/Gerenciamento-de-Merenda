@@ -837,14 +837,14 @@ h1, h2, h3, h4, h5, h6 {
 /* Photo Carousel Styles */
 .carousel-container {
   width: 100%;
-  max-width: 700px;
+  max-width: 650px;
   margin: 0 auto;
 }
 
 .carousel-wrapper {
   position: relative;
   width: 100%;
-  height: 850px;
+  height: 750px;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -857,18 +857,19 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: #000;
 }
 
 .carousel-image-element {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
   transition: opacity 0.3s ease;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .carousel-image-element.transitioning {
@@ -880,11 +881,12 @@ h1, h2, h3, h4, h5, h6 {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
   color: white;
   padding: 2rem 1.5rem 1rem;
   font-size: 1.1rem;
   font-weight: 500;
+  z-index: 5;
 }
 
 .carousel-button {
@@ -948,21 +950,21 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 1024px) {
   .carousel-wrapper {
-    height: 700px;
+    height: 650px;
   }
   
   .carousel-container {
-    max-width: 600px;
+    max-width: 550px;
   }
 }
 
 @media (max-width: 768px) {
   .carousel-wrapper {
-    height: 550px;
+    height: 500px;
   }
   
   .carousel-container {
-    max-width: 450px;
+    max-width: 400px;
   }
   
   .carousel-button {
