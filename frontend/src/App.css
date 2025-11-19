@@ -944,6 +944,42 @@ h1, h2, h3, h4, h5, h6 {
   transform: scale(1.3);
 }
 
+@media (max-width: 1024px) {
+  .carousel-wrapper {
+    height: 450px;
+  }
+}
+
+@media (max-width: 768px) {
+  .carousel-wrapper {
+    height: 350px;
+  }
+  
+  .carousel-button {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .carousel-button-left {
+    left: 0.5rem;
+  }
+  
+  .carousel-button-right {
+    right: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-wrapper {
+    height: 280px;
+  }
+  
+  .carousel-caption {
+    font-size: 0.95rem;
+    padding: 1.5rem 1rem 0.75rem;
+  }
+}
+
 .home-footer {
   text-align: center;
   margin-top: 4rem;
