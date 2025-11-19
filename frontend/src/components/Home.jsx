@@ -90,6 +90,12 @@ const Home = ({ onShowLogin, onShowRegister }) => {
           </div>
         )}
 
+        {queueSchedule && (
+          <div style={{ marginBottom: '3rem' }}>
+            <QueueDisplay schedule={queueSchedule} />
+          </div>
+        )}
+
         <div className="home-hero">
           <h1>Cardápio da Semana</h1>
           <p>Confira as refeições programadas para esta semana</p>
