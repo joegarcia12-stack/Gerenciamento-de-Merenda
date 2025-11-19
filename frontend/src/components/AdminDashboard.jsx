@@ -159,6 +159,15 @@ const AdminDashboard = ({ onLogout }) => {
                 Gerenciar Contas
               </button>
 
+              <button
+                className="manage-menu-button"
+                onClick={() => setShowMenuManagement(true)}
+                data-testid="manage-menu-button"
+              >
+                <UtensilsCrossed size={18} style={{ marginRight: '0.5rem' }} />
+                Gerenciar Cardápio
+              </button>
+
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
