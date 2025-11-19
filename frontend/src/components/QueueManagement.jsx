@@ -112,6 +112,16 @@ const QueueManagement = ({ onBack }) => {
       return;
     }
 
+    // Validar se há turmas nas filas
+    const hasClasses = Object.values(schedule).some(day => 
+      day.queue1.breakfast.length > 0 || day.queue2.breakfast.length > 0
+    );
+
+    if (!hasClasses) {
+      toast.error('Gere a escala antes de salvar');
+      return;
+    }
+
     setLoading(true);
     try {
       await axios.post(
@@ -119,8 +129,14 @@ const QueueManagement = ({ onBack }) => {
         { week_start: weekStart, schedule },
         { headers: getAuthHeaders() }
       );
-      toast.success('Escala de filas salva com sucesso!');
-      setTimeout(() => onBack(), 1500);
+      toast.success('✅ Escala salva e publicada na página inicial!', {
+        duration: 3000,
+        style: {
+          background: '#4CAF50',
+          color: 'white',
+        }
+      });
+      setTimeout(() => onBack(), 2000);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao salvar escala');
     } finally {
