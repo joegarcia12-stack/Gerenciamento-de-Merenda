@@ -319,8 +319,23 @@ async def get_current_week_menu():
     # Get current week menu (public endpoint)
     today = date.today()
     # Get Monday of current week
-    monday = today - datetime.timedelta(days=today.weekday())
+    monday = today - timedelta(days=today.weekday())
     week_start = monday.isoformat()
+    
+    menu = await db.weekly_menus.find_one({"week_start": week_start}, {"_id": 0})
+    
+    if not menu:
+        return None
+    
+    if isinstance(menu.get('updated_at'), str):
+        menu['updated_at'] = datetime.fromisoformat(menu['updated_at'])
+    
+    return menu
+
+@api_router.get("/menu/by-week/{week_start}")
+async def get_menu_by_week(week_start: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view menus")
     
     menu = await db.weekly_menus.find_one({"week_start": week_start}, {"_id": 0})
     
