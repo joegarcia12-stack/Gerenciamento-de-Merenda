@@ -42,26 +42,76 @@ const GalleryManagement = ({ onBack }) => {
   };
 
   const handleAddPhoto = async () => {
-    if (!photoUrl.trim()) {
-      toast.error('Insira a URL da foto');
-      return;
-    }
+    if (uploadMethod === 'url') {
+      if (!photoUrl.trim()) {
+        toast.error('Insira a URL da foto');
+        return;
+      }
 
-    setAdding(true);
-    try {
-      await axios.post(
-        `${API}/gallery/photos`,
-        { url: photoUrl, caption: caption || null },
-        { headers: getAuthHeaders() }
-      );
-      toast.success('Foto adicionada com sucesso!');
-      setPhotoUrl('');
-      setCaption('');
-      fetchPhotos();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erro ao adicionar foto');
-    } finally {
-      setAdding(false);
+      setAdding(true);
+      try {
+        await axios.post(
+          `${API}/gallery/photos`,
+          { url: photoUrl, caption: caption || null },
+          { headers: getAuthHeaders() }
+        );
+        toast.success('Foto adicionada com sucesso!');
+        setPhotoUrl('');
+        setCaption('');
+        fetchPhotos();
+      } catch (error) {
+        toast.error(error.response?.data?.detail || 'Erro ao adicionar foto');
+      } finally {
+        setAdding(false);
+      }
+    } else {
+      if (!selectedFile) {
+        toast.error('Selecione uma imagem');
+        return;
+      }
+
+      setAdding(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        if (caption) formData.append('caption', caption);
+
+        await axios.post(
+          `${API}/gallery/upload`,
+          formData,
+          { 
+            headers: {
+              ...getAuthHeaders(),
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+        toast.success('Foto enviada com sucesso!');
+        setSelectedFile(null);
+        setCaption('');
+        fetchPhotos();
+      } catch (error) {
+        toast.error(error.response?.data?.detail || 'Erro ao enviar foto');
+      } finally {
+        setAdding(false);
+      }
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Arquivo muito grande. Máximo 5MB');
+        return;
+      }
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Apenas imagens são permitidas');
+        return;
+      }
+      setSelectedFile(file);
     }
   };
 
