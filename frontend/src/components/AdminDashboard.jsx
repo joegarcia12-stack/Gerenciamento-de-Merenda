@@ -174,6 +174,15 @@ const AdminDashboard = ({ onLogout }) => {
                 Gerenciar Cardápio
               </button>
 
+              <button
+                className="manage-gallery-button"
+                onClick={() => setShowGalleryManagement(true)}
+                data-testid="manage-gallery-button"
+              >
+                <Images size={18} style={{ marginRight: '0.5rem' }} />
+                Gerenciar Mural
+              </button>
+
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
