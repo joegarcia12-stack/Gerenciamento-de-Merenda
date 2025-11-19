@@ -37,7 +37,7 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     username: str
     password_hash: str
-    role: str
+    role: str  # "leader" or "admin"
     class_id: Optional[str] = None
 
 class UserCreate(BaseModel):
@@ -69,7 +69,7 @@ class DailyCount(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     class_id: str
-    date: str
+    date: str  # YYYY-MM-DD
     count: int
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_by: str
@@ -95,12 +95,13 @@ class DashboardSummary(BaseModel):
 class WeeklyMenu(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    week_start: str
-    monday: dict
+    week_start: str  # YYYY-MM-DD (Monday)
+    monday: dict  # {"breakfast": str, "lunch": str, "snack": str}
     tuesday: dict
     wednesday: dict
     thursday: dict
     friday: dict
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class WeeklyMenuCreate(BaseModel):
@@ -110,6 +111,16 @@ class WeeklyMenuCreate(BaseModel):
     wednesday: dict
     thursday: dict
     friday: dict
+
+class WeeklyMenuResponse(BaseModel):
+    id: str
+    week_start: str
+    monday: dict
+    tuesday: dict
+    wednesday: dict
+    thursday: dict
+    friday: dict
+    updated_at: datetime
 
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -144,10 +155,12 @@ async def root():
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     try:
+        # Check if user exists
         existing = await db.users.find_one({"username": user_data.username})
         if existing:
             raise HTTPException(status_code=400, detail="Username already exists")
         
+        # Validate class_id if leader
         if user_data.role == "leader" and user_data.class_id:
             class_exists = await db.classes.find_one({"id": user_data.class_id})
             if not class_exists:
@@ -200,20 +213,37 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "class_id": current_user.class_id
     }
 
+@api_router.post("/classes")
+async def create_class(class_data: ClassCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create classes")
+    
+    new_class = Class(**class_data.model_dump())
+    await db.classes.insert_one(new_class.model_dump())
+    return new_class
+
 @api_router.get("/classes", response_model=List[Class])
 async def get_classes():
+    # Public endpoint for registration - no auth required
     classes = await db.classes.find({}, {"_id": 0}).to_list(1000)
     return classes
 
 @api_router.post("/counts")
 async def create_or_update_count(count_data: DailyCountCreate, current_user: User = Depends(get_current_user)):
+    # Leaders can only update their own class
     if current_user.role == "leader" and count_data.class_id != current_user.class_id:
         raise HTTPException(status_code=403, detail="You can only update your own class")
     
     today = date.today().isoformat()
-    existing = await db.daily_counts.find_one({"class_id": count_data.class_id, "date": today})
+    
+    # Check if count already exists for today
+    existing = await db.daily_counts.find_one({
+        "class_id": count_data.class_id,
+        "date": today
+    })
     
     if existing:
+        # Update existing count
         await db.daily_counts.update_one(
             {"class_id": count_data.class_id, "date": today},
             {"$set": {
@@ -224,6 +254,7 @@ async def create_or_update_count(count_data: DailyCountCreate, current_user: Use
         )
         return {"message": "Count updated successfully"}
     else:
+        # Create new count
         new_count = DailyCount(
             class_id=count_data.class_id,
             date=today,
@@ -238,8 +269,11 @@ async def create_or_update_count(count_data: DailyCountCreate, current_user: Use
 @api_router.get("/counts/today", response_model=List[DailyCountResponse])
 async def get_today_counts(current_user: User = Depends(get_current_user)):
     today = date.today().isoformat()
+    
+    # Get all counts for today
     counts = await db.daily_counts.find({"date": today}, {"_id": 0}).to_list(1000)
     
+    # Enrich with class information
     result = []
     for count in counts:
         class_info = await db.classes.find_one({"id": count["class_id"]}, {"_id": 0})
@@ -254,6 +288,41 @@ async def get_today_counts(current_user: User = Depends(get_current_user)):
                 count=count["count"],
                 updated_at=count["updated_at"]
             ))
+    
+    return result
+
+@api_router.get("/counts/history")
+async def get_counts_history(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    query = {}
+    if start_date and end_date:
+        query["date"] = {"$gte": start_date, "$lte": end_date}
+    elif start_date:
+        query["date"] = {"$gte": start_date}
+    elif end_date:
+        query["date"] = {"$lte": end_date}
+    
+    counts = await db.daily_counts.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
+    
+    # Enrich with class information
+    result = []
+    for count in counts:
+        class_info = await db.classes.find_one({"id": count["class_id"]}, {"_id": 0})
+        if class_info:
+            if isinstance(count['updated_at'], str):
+                count['updated_at'] = datetime.fromisoformat(count['updated_at'])
+            result.append({
+                "id": count["id"],
+                "class_id": count["class_id"],
+                "class_name": class_info["name"],
+                "date": count["date"],
+                "count": count["count"],
+                "updated_at": count["updated_at"].isoformat()
+            })
+    
     return result
 
 @api_router.get("/dashboard/summary", response_model=DashboardSummary)
@@ -264,9 +333,12 @@ async def get_dashboard_summary(target_date: Optional[str] = None, current_user:
     if not target_date:
         target_date = date.today().isoformat()
     
+    # Get all counts for the date
     counts = await db.daily_counts.find({"date": target_date}, {"_id": 0}).to_list(1000)
+    
     total_meals = sum(c["count"] for c in counts)
     total_classes = len(counts)
+    
     class_details = []
     
     for count in counts:
@@ -290,62 +362,14 @@ async def get_dashboard_summary(target_date: Optional[str] = None, current_user:
         class_details=class_details
     )
 
-# Weekly Menu Routes
-@api_router.post("/menu/weekly")
-async def create_or_update_weekly_menu(menu_data: WeeklyMenuCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can manage menu")
-    
-    existing = await db.weekly_menus.find_one({"week_start": menu_data.week_start})
-    
-    if existing:
-        await db.weekly_menus.update_one(
-            {"week_start": menu_data.week_start},
-            {"$set": {
-                **menu_data.model_dump(),
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
-        )
-        return {"message": "Menu updated successfully"}
-    else:
-        new_menu = WeeklyMenu(**menu_data.model_dump())
-        doc = new_menu.model_dump()
-        doc['updated_at'] = doc['updated_at'].isoformat()
-        await db.weekly_menus.insert_one(doc)
-        return {"message": "Menu created successfully"}
-
-@api_router.get("/menu/current")
-async def get_current_week_menu():
-    # Get current week menu (public endpoint)
-    today = date.today()
-    # Get Monday of current week
-    monday = today - datetime.timedelta(days=today.weekday())
-    week_start = monday.isoformat()
-    
-    menu = await db.weekly_menus.find_one({"week_start": week_start}, {"_id": 0})
-    
-    if not menu:
-        return None
-    
-    if isinstance(menu.get('updated_at'), str):
-        menu['updated_at'] = datetime.fromisoformat(menu['updated_at'])
-    
-    return menu
-
-@api_router.get("/menu/all")
-async def get_all_menus(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can view all menus")
-    
-    menus = await db.weekly_menus.find({}, {"_id": 0}).sort("week_start", -1).to_list(100)
-    return menus
-
 @api_router.post("/admin/reset-database")
 async def reset_database(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can reset database")
     
+    # Delete all daily counts
     result = await db.daily_counts.delete_many({})
+    
     return {"message": f"Database reset successfully. {result.deleted_count} meal counts have been cleared."}
 
 @api_router.post("/admin/reset-user-accounts")
@@ -353,7 +377,9 @@ async def reset_user_accounts(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can reset user accounts")
     
+    # Delete all users except admin
     result = await db.users.delete_many({"role": {"$ne": "admin"}})
+    
     return {"message": f"User accounts reset successfully. {result.deleted_count} user accounts have been deleted."}
 
 @api_router.get("/admin/users")
@@ -369,6 +395,7 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can delete users")
     
+    # Prevent deleting admin users
     user_to_delete = await db.users.find_one({"id": user_id})
     if not user_to_delete:
         raise HTTPException(status_code=404, detail="User not found")
@@ -377,10 +404,11 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
         raise HTTPException(status_code=403, detail="Cannot delete admin users")
     
     result = await db.users.delete_one({"id": user_id})
+    
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return {"message": "User deleted successfully"}
+    return {"message": f"User deleted successfully"}
 
 app.include_router(api_router)
 
