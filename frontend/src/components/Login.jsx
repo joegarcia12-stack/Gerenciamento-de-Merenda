@@ -106,6 +106,16 @@ const Login = ({ onLogin, initialMode = 'login', onClose }) => {
 
   return (
     <div className="login-container" data-testid="login-container">
+      {onClose && (
+        <button 
+          className="login-back-button" 
+          onClick={onClose}
+          data-testid="login-back-button"
+        >
+          <ArrowLeft size={20} />
+          Voltar
+        </button>
+      )}
       <div className="login-card" style={{ maxWidth: isRegister ? '500px' : '440px' }}>
         <div className="login-header">
           <div className="login-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
