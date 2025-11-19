@@ -718,6 +718,22 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 6px 24px rgba(76, 175, 80, 0.4);
 }
 
+.info-banner {
+  background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  border-left: 4px solid #2196F3;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.info-banner strong {
+  color: #0D47A1;
+  font-size: 1rem;
+}
+
 /* Queue Schedule Styles */
 .queue-schedule-table {
   overflow-x: auto;
