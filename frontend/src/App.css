@@ -718,6 +718,247 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 6px 24px rgba(76, 175, 80, 0.4);
 }
 
+/* Queue Schedule Styles */
+.queue-schedule-table {
+  overflow-x: auto;
+  margin-top: 2rem;
+}
+
+.queue-schedule-table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.queue-schedule-table th {
+  background: linear-gradient(135deg, #4DD0E1 0%, #00BCD4 100%);
+  color: white;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.queue-schedule-table td {
+  padding: 1.5rem 1rem;
+  border-bottom: 1px solid #E0F7FA;
+  vertical-align: top;
+}
+
+.queue-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.meal-section {
+  background: #F5F5F5;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border-left: 4px solid #00BCD4;
+}
+
+.meal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  color: #006064;
+}
+
+.meal-time {
+  font-size: 0.85rem;
+  color: #00838F;
+  font-weight: normal;
+}
+
+.class-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.class-badge {
+  background: white;
+  color: #006064;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #B2EBF2;
+}
+
+/* Queue Display on Home */
+.queue-display-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.queue-display-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.queue-display-header h2 {
+  font-size: 1.75rem;
+  color: #006064;
+  margin: 0;
+  font-weight: 700;
+}
+
+.queue-display-header p {
+  color: #00838F;
+  margin: 0.5rem 0 0 0;
+}
+
+.queue-table-wrapper {
+  overflow-x: auto;
+}
+
+.queue-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.queue-table thead th {
+  background: linear-gradient(135deg, #4DD0E1 0%, #00BCD4 100%);
+  color: white;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.queue-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.queue-table tbody tr:hover {
+  background: #E0F7FA;
+}
+
+.queue-table tbody tr.current-day {
+  background: #FFF9C4;
+}
+
+.queue-table tbody tr.current-day:hover {
+  background: #FFF59D;
+}
+
+.day-cell {
+  padding: 1.5rem 1rem;
+  border-bottom: 1px solid #E0F7FA;
+  background: #F5F5F5;
+}
+
+.day-label {
+  font-weight: 600;
+  color: #006064;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.today-badge {
+  background: linear-gradient(135deg, #FFD54F 0%, #FFC107 100%);
+  color: #F57F17;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.queue-cell {
+  padding: 1rem;
+  border-bottom: 1px solid #E0F7FA;
+}
+
+.queue-meals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.meal-row {
+  background: #F9F9F9;
+  padding: 0.75rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-left: 3px solid #00BCD4;
+}
+
+.meal-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 150px;
+}
+
+.meal-icon {
+  font-size: 1.5rem;
+}
+
+.meal-name {
+  font-weight: 600;
+  color: #006064;
+  font-size: 0.95rem;
+}
+
+.meal-time {
+  font-size: 0.8rem;
+  color: #00838F;
+}
+
+.meal-classes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.queue-class-badge {
+  background: white;
+  color: #006064;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #B2EBF2;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .queue-display-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .meal-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .queue-schedule-table td {
+    padding: 1rem 0.5rem;
+  }
+}
+
 /* Gallery Management Styles */
 .add-photo-form {
   display: flex;
