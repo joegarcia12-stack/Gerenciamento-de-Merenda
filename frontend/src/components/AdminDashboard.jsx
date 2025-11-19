@@ -104,6 +104,10 @@ const AdminDashboard = ({ onLogout }) => {
     return <GalleryManagement onBack={() => setShowGalleryManagement(false)} />;
   }
 
+  if (showQueueManagement) {
+    return <QueueManagement onBack={() => setShowQueueManagement(false)} />;
+  }
+
   return (
     <div className="dashboard-container" data-testid="admin-dashboard">
       <div className="dashboard-header">
