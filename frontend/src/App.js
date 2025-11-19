@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import '@/App.css';
+import Home from './components/Home';
 import Login from './components/Login';
 import LeaderDashboard from './components/LeaderDashboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -19,6 +20,8 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -51,6 +54,8 @@ function App() {
     if (classId) localStorage.setItem('classId', classId);
     setIsAuthenticated(true);
     setUserRole(role);
+    setShowLogin(false);
+    setShowRegister(false);
   };
 
   const handleLogout = () => {
@@ -67,45 +72,74 @@ function App() {
     );
   }
 
+  // If authenticated, redirect to appropriate dashboard
+  if (isAuthenticated) {
+    return (
+      <div className="App">
+        <Toaster position="top-right" />
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                userRole === 'leader' ? (
+                  <Navigate to="/leader" replace />
+                ) : (
+                  <Navigate to="/admin" replace />
+                )
+              }
+            />
+            <Route
+              path="/leader"
+              element={
+                userRole === 'leader' ? (
+                  <LeaderDashboard onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                userRole === 'admin' ? (
+                  <AdminDashboard onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    );
+  }
+
+  // If showing login or register modal
+  if (showLogin || showRegister) {
+    return (
+      <div className="App">
+        <Toaster position="top-right" />
+        <Login
+          onLogin={handleLogin}
+          initialMode={showRegister ? 'register' : 'login'}
+          onClose={() => {
+            setShowLogin(false);
+            setShowRegister(false);
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Show home page
   return (
     <div className="App">
       <Toaster position="top-right" />
-      <BrowserRouter>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              !isAuthenticated ? (
-                <Login onLogin={handleLogin} />
-              ) : userRole === 'leader' ? (
-                <Navigate to="/leader" replace />
-              ) : (
-                <Navigate to="/admin" replace />
-              )
-            }
-          />
-          <Route
-            path="/leader"
-            element={
-              isAuthenticated && userRole === 'leader' ? (
-                <LeaderDashboard onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              isAuthenticated && userRole === 'admin' ? (
-                <AdminDashboard onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+      <Home
+        onShowLogin={() => setShowLogin(true)}
+        onShowRegister={() => setShowRegister(true)}
+      />
     </div>
   );
 }
