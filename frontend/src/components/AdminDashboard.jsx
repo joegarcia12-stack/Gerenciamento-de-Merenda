@@ -32,11 +32,11 @@ const AdminDashboard = ({ onLogout }) => {
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
   useEffect(() => {
-    if (!showUserManagement && !showMenuManagement) {
+    if (!showUserManagement && !showMenuManagement && !showGalleryManagement) {
       fetchSummary();
       checkDailyNotification();
     }
-  }, [selectedDate, showUserManagement, showMenuManagement]);
+  }, [selectedDate, showUserManagement, showMenuManagement, showGalleryManagement]);
 
   const checkDailyNotification = () => {
     const today = new Date().toISOString().split('T')[0];
