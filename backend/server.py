@@ -408,6 +408,38 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
     
     return {"message": "User deleted successfully"}
 
+# Gallery Routes
+@api_router.post("/gallery/photos")
+async def add_gallery_photo(photo_data: GalleryPhotoCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add photos")
+    
+    new_photo = GalleryPhoto(**photo_data.model_dump())
+    doc = new_photo.model_dump()
+    doc['uploaded_at'] = doc['uploaded_at'].isoformat()
+    await db.gallery_photos.insert_one(doc)
+    return {"message": "Photo added successfully", "id": new_photo.id}
+
+@api_router.get("/gallery/photos")
+async def get_gallery_photos():
+    # Public endpoint
+    photos = await db.gallery_photos.find({}, {"_id": 0}).sort("uploaded_at", -1).to_list(100)
+    for photo in photos:
+        if isinstance(photo.get('uploaded_at'), str):
+            photo['uploaded_at'] = datetime.fromisoformat(photo['uploaded_at'])
+    return photos
+
+@api_router.delete("/gallery/photos/{photo_id}")
+async def delete_gallery_photo(photo_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete photos")
+    
+    result = await db.gallery_photos.delete_one({"id": photo_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    
+    return {"message": "Photo deleted successfully"}
+
 app.include_router(api_router)
 
 app.add_middleware(
