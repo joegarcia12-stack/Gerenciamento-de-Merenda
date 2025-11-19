@@ -164,11 +164,11 @@ const QueueManagement = ({ onBack }) => {
             </div>
             <button
               className="auto-generate-button"
-              onClick={distributeClassesRotating}
+              onClick={distributeClassesRandomly}
               data-testid="auto-generate-button"
             >
               <RotateCw size={18} style={{ marginRight: '0.5rem' }} />
-              Gerar Automaticamente
+              Gerar Aleatoriamente
             </button>
           </div>
 
