@@ -98,6 +98,10 @@ const AdminDashboard = ({ onLogout }) => {
     return <MenuManagement onBack={() => setShowMenuManagement(false)} />;
   }
 
+  if (showGalleryManagement) {
+    return <GalleryManagement onBack={() => setShowGalleryManagement(false)} />;
+  }
+
   return (
     <div className="dashboard-container" data-testid="admin-dashboard">
       <div className="dashboard-header">
