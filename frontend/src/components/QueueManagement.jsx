@@ -158,6 +158,17 @@ const QueueManagement = ({ onBack }) => {
 
       <div className="dashboard-content">
         <div className="content-card">
+          <div className="info-banner">
+            <div style={{ fontSize: '1.5rem' }}>🎲</div>
+            <div>
+              <strong>Sistema de Distribuição Aleatória</strong>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: '#00838F' }}>
+                Ao clicar em "Gerar Aleatoriamente", as 12 turmas serão distribuídas de forma aleatória nas duas filas.
+                Cada dia terá uma combinação diferente. Após salvar, a escala será publicada automaticamente na página inicial.
+              </p>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: '#006064' }}>
