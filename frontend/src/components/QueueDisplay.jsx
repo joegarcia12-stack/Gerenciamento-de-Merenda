@@ -28,9 +28,12 @@ const QueueDisplay = ({ schedule }) => {
     <div className="queue-display-container" data-testid="queue-display">
       <div className="queue-display-header">
         <Users size={32} color="#006064" />
-        <div>
+        <div style={{ flex: 1 }}>
           <h2>Escala de Filas para Refeições</h2>
           <p>Confira a organização das turmas para cada horário de refeição</p>
+        </div>
+        <div className="queue-info-badge">
+          📋 Visualização
         </div>
       </div>
 
