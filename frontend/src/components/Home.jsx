@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { Calendar, Coffee, Utensils, Cookie, LogIn, UserPlus } from 'lucide-react';
+import PhotoCarousel from './PhotoCarousel';
 
 const Home = ({ onShowLogin, onShowRegister }) => {
   const [menu, setMenu] = useState(null);
+  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
   useEffect(() => {
     fetchMenu();
+    fetchPhotos();
   }, []);
 
   const fetchMenu = async () => {
@@ -21,6 +24,15 @@ const Home = ({ onShowLogin, onShowRegister }) => {
       console.error('Erro ao carregar cardápio');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPhotos = async () => {
+    try {
+      const response = await axios.get(`${API}/gallery/photos`);
+      setPhotos(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar fotos');
     }
   };
 
