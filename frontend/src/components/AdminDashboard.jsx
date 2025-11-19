@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
-import { Users, Calendar, LogOut, RefreshCw, Trash2, Bell, UserCog, UtensilsCrossed, Images } from 'lucide-react';
+import { Users, Calendar, LogOut, RefreshCw, Trash2, Bell, UserCog, UtensilsCrossed, Images, ListOrdered } from 'lucide-react';
 import UserManagement from './UserManagement';
 import MenuManagement from './MenuManagement';
 import GalleryManagement from './GalleryManagement';
+import QueueManagement from './QueueManagement';
 import {
   AlertDialog,
   AlertDialogAction,
