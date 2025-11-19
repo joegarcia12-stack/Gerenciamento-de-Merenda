@@ -73,38 +73,37 @@ const QueueManagement = ({ onBack }) => {
     setSchedule(newSchedule);
   };
 
-  const distributeClassesRotating = () => {
+  const distributeClassesRandomly = () => {
     if (classes.length === 0) return;
 
     const newSchedule = {};
-    let classIndex = 0;
 
     days.forEach((day) => {
+      // Shuffle classes randomly for each day
+      const shuffledClasses = [...classes].sort(() => Math.random() - 0.5);
+      
       newSchedule[day.key] = {
         queue1: { breakfast: [], lunch: [], snack: [] },
         queue2: { breakfast: [], lunch: [], snack: [] }
       };
 
-      // Distribute 6 classes per queue (12 total)
-      for (let i = 0; i < 6; i++) {
-        if (classIndex >= classes.length) classIndex = 0;
-        newSchedule[day.key].queue1.breakfast.push(classes[classIndex].name);
-        newSchedule[day.key].queue1.lunch.push(classes[classIndex].name);
-        newSchedule[day.key].queue1.snack.push(classes[classIndex].name);
-        classIndex++;
+      // First 6 classes go to queue1
+      for (let i = 0; i < 6 && i < shuffledClasses.length; i++) {
+        newSchedule[day.key].queue1.breakfast.push(shuffledClasses[i].name);
+        newSchedule[day.key].queue1.lunch.push(shuffledClasses[i].name);
+        newSchedule[day.key].queue1.snack.push(shuffledClasses[i].name);
       }
 
-      for (let i = 0; i < 6; i++) {
-        if (classIndex >= classes.length) classIndex = 0;
-        newSchedule[day.key].queue2.breakfast.push(classes[classIndex].name);
-        newSchedule[day.key].queue2.lunch.push(classes[classIndex].name);
-        newSchedule[day.key].queue2.snack.push(classes[classIndex].name);
-        classIndex++;
+      // Next 6 classes go to queue2
+      for (let i = 6; i < 12 && i < shuffledClasses.length; i++) {
+        newSchedule[day.key].queue2.breakfast.push(shuffledClasses[i].name);
+        newSchedule[day.key].queue2.lunch.push(shuffledClasses[i].name);
+        newSchedule[day.key].queue2.snack.push(shuffledClasses[i].name);
       }
     });
 
     setSchedule(newSchedule);
-    toast.success('Escala gerada automaticamente!');
+    toast.success('Escala gerada aleatoriamente! A ordem muda a cada dia.');
   };
 
   const handleSave = async () => {
