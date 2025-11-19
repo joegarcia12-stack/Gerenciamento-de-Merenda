@@ -19,28 +19,32 @@ const MenuManagement = ({ onBack }) => {
   useEffect(() => {
     // Set current week Monday
     const today = new Date();
+    const dayOfWeek = today.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // if Sunday, go back 6 days, else go to Monday
     const monday = new Date(today);
-    monday.setDate(today.getDate() - today.getDay() + 1);
-    setWeekStart(monday.toISOString().split('T')[0]);
-    loadExistingMenu(monday.toISOString().split('T')[0]);
+    monday.setDate(today.getDate() + diff);
+    const mondayStr = monday.toISOString().split('T')[0];
+    setWeekStart(mondayStr);
+    loadExistingMenu(mondayStr);
   }, []);
 
   const loadExistingMenu = async (weekStartDate) => {
     try {
-      const response = await axios.get(`${API}/menu/current`, {
+      const response = await axios.get(`${API}/menu/by-week/${weekStartDate}`, {
         headers: getAuthHeaders()
       });
-      if (response.data && response.data.week_start === weekStartDate) {
+      if (response.data) {
         setMenu({
-          monday: response.data.monday,
-          tuesday: response.data.tuesday,
-          wednesday: response.data.wednesday,
-          thursday: response.data.thursday,
-          friday: response.data.friday
+          monday: response.data.monday || { breakfast: '', lunch: '', snack: '' },
+          tuesday: response.data.tuesday || { breakfast: '', lunch: '', snack: '' },
+          wednesday: response.data.wednesday || { breakfast: '', lunch: '', snack: '' },
+          thursday: response.data.thursday || { breakfast: '', lunch: '', snack: '' },
+          friday: response.data.friday || { breakfast: '', lunch: '', snack: '' }
         });
+        toast.success('Cardápio carregado com sucesso!');
       }
     } catch (error) {
-      console.log('Nenhum cardápio existente encontrado');
+      console.log('Nenhum cardápio existente encontrado para esta semana');
     }
   };
 
