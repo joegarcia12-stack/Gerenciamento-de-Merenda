@@ -28,6 +28,7 @@ const AdminDashboard = ({ onLogout }) => {
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showMenuManagement, setShowMenuManagement] = useState(false);
   const [showGalleryManagement, setShowGalleryManagement] = useState(false);
+  const [showQueueManagement, setShowQueueManagement] = useState(false);
   const username = localStorage.getItem('username');
   
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
