@@ -635,6 +635,20 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 6px 24px rgba(255, 152, 0, 0.4);
 }
 
+.home-footer {
+  text-align: center;
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.home-footer p {
+  color: #00838F;
+  font-size: 0.95rem;
+  font-style: italic;
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .home-hero h1 {
     font-size: 2rem;
