@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { toast } from 'sonner';
-import { User, Lock, LogIn, UserPlus, GraduationCap } from 'lucide-react';
+import { User, Lock, LogIn, UserPlus, GraduationCap, ArrowLeft } from 'lucide-react';
 
 const Login = ({ onLogin, initialMode = 'login', onClose }) => {
   const [isRegister, setIsRegister] = useState(initialMode === 'register');
