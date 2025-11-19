@@ -112,6 +112,10 @@ const Home = ({ onShowLogin, onShowRegister }) => {
           </div>
         )}
       </div>
+
+      <footer className="home-footer">
+        <p>* Cardápio sujeito a alterações</p>
+      </footer>
     </div>
   );
 };
