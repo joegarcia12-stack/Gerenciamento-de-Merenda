@@ -415,6 +415,41 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
     return {"message": "User deleted successfully"}
 
 # Gallery Routes
+@api_router.post("/gallery/upload")
+async def upload_gallery_photo(
+    file: UploadFile = File(...),
+    caption: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can upload photos")
+    
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Only images allowed.")
+    
+    # Generate unique filename
+    file_extension = file.filename.split(".")[-1]
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Save file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    
+    # Create photo entry
+    photo_url = f"/uploads/{unique_filename}"
+    new_photo = GalleryPhoto(url=photo_url, caption=caption)
+    doc = new_photo.model_dump()
+    doc['uploaded_at'] = doc['uploaded_at'].isoformat()
+    await db.gallery_photos.insert_one(doc)
+    
+    return {"message": "Photo uploaded successfully", "id": new_photo.id, "url": photo_url}
+
 @api_router.post("/gallery/photos")
 async def add_gallery_photo(photo_data: GalleryPhotoCreate, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
