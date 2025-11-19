@@ -92,6 +92,10 @@ const AdminDashboard = ({ onLogout }) => {
     return <UserManagement onBack={() => setShowUserManagement(false)} />;
   }
 
+  if (showMenuManagement) {
+    return <MenuManagement onBack={() => setShowMenuManagement(false)} />;
+  }
+
   return (
     <div className="dashboard-container" data-testid="admin-dashboard">
       <div className="dashboard-header">
