@@ -223,7 +223,7 @@ const GalleryManagement = ({ onBack }) => {
               data-testid="add-photo-button"
             >
               <Plus size={20} style={{ marginRight: '0.5rem' }} />
-              {adding ? 'Adicionando...' : 'Adicionar Foto'}
+              {adding ? 'Adicionando...' : (uploadMethod === 'file' ? 'Enviar Foto' : 'Adicionar Foto')}
             </button>
           </div>
         </div>
