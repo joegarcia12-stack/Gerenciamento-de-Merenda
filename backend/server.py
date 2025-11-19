@@ -492,6 +492,62 @@ async def delete_gallery_photo(photo_id: str, current_user: User = Depends(get_c
     
     return {"message": "Photo deleted successfully"}
 
+# Queue Schedule Routes
+@api_router.post("/queue/schedule")
+async def create_or_update_queue_schedule(schedule_data: QueueScheduleCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage queue schedules")
+    
+    existing = await db.queue_schedules.find_one({"week_start": schedule_data.week_start})
+    
+    if existing:
+        await db.queue_schedules.update_one(
+            {"week_start": schedule_data.week_start},
+            {"$set": {
+                "schedule": schedule_data.schedule,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        return {"message": "Queue schedule updated successfully"}
+    else:
+        new_schedule = QueueSchedule(**schedule_data.model_dump())
+        doc = new_schedule.model_dump()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        await db.queue_schedules.insert_one(doc)
+        return {"message": "Queue schedule created successfully"}
+
+@api_router.get("/queue/current")
+async def get_current_queue_schedule():
+    # Public endpoint - get current week schedule
+    today = date.today()
+    monday = today - timedelta(days=today.weekday())
+    week_start = monday.isoformat()
+    
+    schedule = await db.queue_schedules.find_one({"week_start": week_start}, {"_id": 0})
+    
+    if not schedule:
+        return None
+    
+    if isinstance(schedule.get('updated_at'), str):
+        schedule['updated_at'] = datetime.fromisoformat(schedule['updated_at'])
+    
+    return schedule
+
+@api_router.get("/queue/by-week/{week_start}")
+async def get_queue_by_week(week_start: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view queue schedules")
+    
+    schedule = await db.queue_schedules.find_one({"week_start": week_start}, {"_id": 0})
+    
+    if not schedule:
+        return None
+    
+    if isinstance(schedule.get('updated_at'), str):
+        schedule['updated_at'] = datetime.fromisoformat(schedule['updated_at'])
+    
+    return schedule
+
 app.include_router(api_router)
 
 app.add_middleware(
