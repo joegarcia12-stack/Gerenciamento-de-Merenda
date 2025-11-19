@@ -11,9 +11,9 @@ const QueueDisplay = ({ schedule }) => {
   ];
 
   const meals = [
-    { key: 'breakfast', label: 'Café', icon: '☕', time: '7:00 - 8:00' },
-    { key: 'lunch', label: 'Almoço', icon: '🍽️', time: '11:30 - 13:00' },
-    { key: 'snack', label: 'Lanche', icon: '🍪', time: '15:00 - 16:00' }
+    { key: 'breakfast', label: 'Café', icon: '☕', time: '09:10 - 09:30' },
+    { key: 'lunch', label: 'Almoço', icon: '🍽️', time: '12:00 - 13:30' },
+    { key: 'snack', label: 'Lanche', icon: '🍪', time: '15:05 - 15:20' }
   ];
 
   if (!schedule || !schedule.schedule) {
