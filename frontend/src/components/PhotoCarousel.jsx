@@ -55,16 +55,16 @@ const PhotoCarousel = ({ photos }) => {
         </button>
 
         <div className="carousel-content">
-          <div
-            className={`carousel-image ${isTransitioning ? 'transitioning' : ''}`}
-            style={{ backgroundImage: `url(${photos[currentIndex].url})` }}
-          >
-            {photos[currentIndex].caption && (
-              <div className="carousel-caption">
-                {photos[currentIndex].caption}
-              </div>
-            )}
-          </div>
+          <img
+            src={photos[currentIndex].url}
+            alt={photos[currentIndex].caption || 'Foto'}
+            className={`carousel-image-element ${isTransitioning ? 'transitioning' : ''}`}
+          />
+          {photos[currentIndex].caption && (
+            <div className="carousel-caption">
+              {photos[currentIndex].caption}
+            </div>
+          )}
         </div>
 
         <button
