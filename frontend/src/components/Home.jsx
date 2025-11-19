@@ -72,6 +72,12 @@ const Home = ({ onShowLogin, onShowRegister }) => {
       </div>
 
       <div className="home-content">
+        {photos.length > 0 && (
+          <div style={{ marginBottom: '3rem' }}>
+            <PhotoCarousel photos={photos} />
+          </div>
+        )}
+
         <div className="home-hero">
           <h1>Cardápio da Semana</h1>
           <p>Confira as refeições programadas para esta semana</p>
