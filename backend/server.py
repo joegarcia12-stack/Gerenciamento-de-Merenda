@@ -33,6 +33,10 @@ security = HTTPBearer()
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = Path("/app/frontend/public/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
 # Models
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
