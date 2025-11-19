@@ -189,6 +189,15 @@ const AdminDashboard = ({ onLogout }) => {
                 Gerenciar Mural
               </button>
 
+              <button
+                className="manage-queue-button"
+                onClick={() => setShowQueueManagement(true)}
+                data-testid="manage-queue-button"
+              >
+                <ListOrdered size={18} style={{ marginRight: '0.5rem' }} />
+                Gerenciar Filas
+              </button>
+
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
