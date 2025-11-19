@@ -101,9 +101,9 @@ const GalleryManagement = ({ onBack }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Arquivo muito grande. Máximo 5MB');
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Arquivo muito grande. Máximo 10MB');
         return;
       }
       // Validate file type
