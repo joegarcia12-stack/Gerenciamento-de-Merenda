@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
-import { Calendar, Coffee, Utensils, Cookie, LogIn, UserPlus } from 'lucide-react';
+import { Calendar, Coffee, Utensils, Cookie, LogIn, UserPlus, UtensilsCrossed, ListOrdered } from 'lucide-react';
 import PhotoCarousel from './PhotoCarousel';
 import QueueDisplay from './QueueDisplay';
 
@@ -10,6 +10,7 @@ const Home = ({ onShowLogin, onShowRegister }) => {
   const [photos, setPhotos] = useState([]);
   const [queueSchedule, setQueueSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('menu'); // 'menu' or 'queue'
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
   useEffect(() => {
@@ -85,68 +86,101 @@ const Home = ({ onShowLogin, onShowRegister }) => {
 
       <div className="home-content">
         {photos.length > 0 && (
-          <div style={{ marginBottom: '3rem' }}>
+          <div style={{ marginBottom: '2rem' }}>
             <PhotoCarousel photos={photos} />
           </div>
         )}
 
-        {queueSchedule && (
-          <div style={{ marginBottom: '3rem' }}>
-            <QueueDisplay schedule={queueSchedule} />
-          </div>
-        )}
-
-        <div className="home-hero">
-          <h1>Cardápio da Semana</h1>
-          <p>Confira as refeições programadas para esta semana</p>
+        <div className="home-tabs">
+          <button
+            className={`home-tab ${activeTab === 'menu' ? 'active' : ''}`}
+            onClick={() => setActiveTab('menu')}
+            data-testid="menu-tab"
+          >
+            <UtensilsCrossed size={20} />
+            Cardápio da Semana
+          </button>
+          <button
+            className={`home-tab ${activeTab === 'queue' ? 'active' : ''}`}
+            onClick={() => setActiveTab('queue')}
+            data-testid="queue-tab"
+          >
+            <ListOrdered size={20} />
+            Escala de Filas
+          </button>
         </div>
 
-        {loading ? (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Carregando cardápio...</p>
-          </div>
-        ) : menu ? (
-          <div className="menu-grid">
-            {days.map((day) => (
-              <div key={day.key} className="menu-day-card" data-testid={`menu-${day.key}`}>
-                <div className="menu-day-header">
-                  <Calendar size={20} />
-                  <h3>{day.label}</h3>
-                </div>
-                <div className="menu-meals">
-                  <div className="menu-meal">
-                    <div className="menu-meal-label">
-                      {getMealIcon('breakfast')}
-                      <span>Café da Manhã</span>
-                    </div>
-                    <p>{menu[day.key]?.breakfast || 'Não definido'}</p>
-                  </div>
-                  <div className="menu-meal">
-                    <div className="menu-meal-label">
-                      {getMealIcon('lunch')}
-                      <span>Almoço</span>
-                    </div>
-                    <p>{menu[day.key]?.lunch || 'Não definido'}</p>
-                  </div>
-                  <div className="menu-meal">
-                    <div className="menu-meal-label">
-                      {getMealIcon('snack')}
-                      <span>Lanche da Tarde</span>
-                    </div>
-                    <p>{menu[day.key]?.snack || 'Não definido'}</p>
-                  </div>
-                </div>
+        <div className="home-tab-content">
+          {activeTab === 'menu' && (
+            <div className="tab-panel" data-testid="menu-panel">
+              <div className="home-hero">
+                <h1>Cardápio da Semana</h1>
+                <p>Confira as refeições programadas para esta semana</p>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-menu-state">
-            <Calendar size={64} color="#00838F" />
-            <h3>Cardápio não disponível</h3>
-            <p>O cardápio desta semana ainda não foi definido pela gestão escolar.</p>
-          </div>
-        )}
+
+              {loading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Carregando cardápio...</p>
+                </div>
+              ) : menu ? (
+                <div className="menu-grid">
+                  {days.map((day) => (
+                    <div key={day.key} className="menu-day-card" data-testid={`menu-${day.key}`}>
+                      <div className="menu-day-header">
+                        <Calendar size={20} />
+                        <h3>{day.label}</h3>
+                      </div>
+                      <div className="menu-meals">
+                        <div className="menu-meal">
+                          <div className="menu-meal-label">
+                            {getMealIcon('breakfast')}
+                            <span>Café da Manhã</span>
+                          </div>
+                          <p>{menu[day.key]?.breakfast || 'Não definido'}</p>
+                        </div>
+                        <div className="menu-meal">
+                          <div className="menu-meal-label">
+                            {getMealIcon('lunch')}
+                            <span>Almoço</span>
+                          </div>
+                          <p>{menu[day.key]?.lunch || 'Não definido'}</p>
+                        </div>
+                        <div className="menu-meal">
+                          <div className="menu-meal-label">
+                            {getMealIcon('snack')}
+                            <span>Lanche da Tarde</span>
+                          </div>
+                          <p>{menu[day.key]?.snack || 'Não definido'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-menu-state">
+                  <Calendar size={64} color="#00838F" />
+                  <h3>Cardápio não disponível</h3>
+                  <p>O cardápio desta semana ainda não foi definido pela gestão escolar.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'queue' && (
+            <div className="tab-panel" data-testid="queue-panel">
+              {queueSchedule ? (
+                <QueueDisplay schedule={queueSchedule} />
+              ) : (
+                <div className="empty-menu-state">
+                  <ListOrdered size={64} color="#00838F" />
+                  <h3>Escala não disponível</h3>
+                  <p>A escala de filas desta semana ainda não foi definida pela gestão escolar.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <footer className="home-footer">
