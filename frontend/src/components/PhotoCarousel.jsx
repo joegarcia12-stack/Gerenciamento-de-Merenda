@@ -10,7 +10,7 @@ const PhotoCarousel = ({ photos }) => {
 
     const interval = setInterval(() => {
       handleNext();
-    }, 5000); // Muda a cada 5 segundos
+    }, 8000); // Aumentado de 5s para 8s para reduzir carga
 
     return () => clearInterval(interval);
   }, [currentIndex, photos.length]);
@@ -20,7 +20,7 @@ const PhotoCarousel = ({ photos }) => {
     setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % photos.length);
       setIsTransitioning(false);
-    }, 300);
+    }, 400); // Transição mais rápida
   };
 
   const handlePrev = () => {
@@ -28,7 +28,7 @@ const PhotoCarousel = ({ photos }) => {
     setTimeout(() => {
       setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
       setIsTransitioning(false);
-    }, 300);
+    }, 400);
   };
 
   const goToSlide = (index) => {
@@ -36,7 +36,7 @@ const PhotoCarousel = ({ photos }) => {
     setTimeout(() => {
       setCurrentIndex(index);
       setIsTransitioning(false);
-    }, 300);
+    }, 400);
   };
 
   if (!photos || photos.length === 0) {
