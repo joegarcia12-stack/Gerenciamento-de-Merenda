@@ -1172,15 +1172,17 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  will-change: opacity;
+  transform: translateZ(0);
 }
 
 .carousel-image-element.transitioning {
-  opacity: 0.7;
+  opacity: 0.5;
 }
 
 .carousel-caption {
