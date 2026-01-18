@@ -4,23 +4,52 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const PhotoCarousel = ({ photos }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [imageLoadErrors, setImageLoadErrors] = useState({});
 
   useEffect(() => {
     if (photos.length === 0) return;
 
+    // Preload images
+    let loadedCount = 0;
+    const errors = {};
+
+    photos.forEach((photo, index) => {
+      const img = new Image();
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount === photos.length) {
+          setImagesLoaded(true);
+        }
+      };
+      img.onerror = () => {
+        errors[index] = true;
+        loadedCount++;
+        if (loadedCount === photos.length) {
+          setImagesLoaded(true);
+          setImageLoadErrors(errors);
+        }
+      };
+      img.src = photo.url;
+    });
+  }, [photos]);
+
+  useEffect(() => {
+    if (photos.length === 0 || !imagesLoaded) return;
+
     const interval = setInterval(() => {
       handleNext();
-    }, 8000); // Aumentado de 5s para 8s para reduzir carga
+    }, 8000);
 
     return () => clearInterval(interval);
-  }, [currentIndex, photos.length]);
+  }, [currentIndex, photos.length, imagesLoaded]);
 
   const handleNext = () => {
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % photos.length);
       setIsTransitioning(false);
-    }, 400); // Transição mais rápida
+    }, 300);
   };
 
   const handlePrev = () => {
@@ -28,7 +57,7 @@ const PhotoCarousel = ({ photos }) => {
     setTimeout(() => {
       setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
       setIsTransitioning(false);
-    }, 400);
+    }, 300);
   };
 
   const goToSlide = (index) => {
@@ -36,11 +65,24 @@ const PhotoCarousel = ({ photos }) => {
     setTimeout(() => {
       setCurrentIndex(index);
       setIsTransitioning(false);
-    }, 400);
+    }, 300);
   };
 
   if (!photos || photos.length === 0) {
     return null;
+  }
+
+  if (!imagesLoaded) {
+    return (
+      <div className="carousel-container" data-testid="photo-carousel">
+        <div className="carousel-wrapper">
+          <div className="carousel-loading">
+            <div className="spinner"></div>
+            <p>Carregando fotos...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -55,11 +97,17 @@ const PhotoCarousel = ({ photos }) => {
         </button>
 
         <div className="carousel-content">
-          <img
-            src={photos[currentIndex].url}
-            alt={photos[currentIndex].caption || 'Foto'}
-            className={`carousel-image-element ${isTransitioning ? 'transitioning' : ''}`}
-          />
+          {!imageLoadErrors[currentIndex] ? (
+            <img
+              src={photos[currentIndex].url}
+              alt={photos[currentIndex].caption || 'Foto'}
+              className={`carousel-image-element ${isTransitioning ? 'transitioning' : ''}`}
+            />
+          ) : (
+            <div className="carousel-image-error">
+              <p>Erro ao carregar imagem</p>
+            </div>
+          )}
           {photos[currentIndex].caption && (
             <div className="carousel-caption">
               {photos[currentIndex].caption}
