@@ -1167,6 +1167,34 @@ h1, h2, h3, h4, h5, h6 {
   background: #000;
 }
 
+.carousel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: white;
+}
+
+.carousel-loading p {
+  margin-top: 1rem;
+  color: #00BCD4;
+  font-size: 1.1rem;
+}
+
+.carousel-image-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #333;
+}
+
+.carousel-image-error p {
+  color: #EF5350;
+  font-size: 1.1rem;
+}
+
 .carousel-image-element {
   width: 100%;
   height: 100%;
