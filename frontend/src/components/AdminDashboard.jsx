@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
-import { Users, Calendar, LogOut, RefreshCw, Trash2, Bell, UserCog, UtensilsCrossed, Images, ListOrdered } from 'lucide-react';
+import { Users, Calendar, LogOut, RefreshCw, Trash2, Bell, UserCog, UtensilsCrossed, Images, ListOrdered, GraduationCap } from 'lucide-react';
 import UserManagement from './UserManagement';
 import MenuManagement from './MenuManagement';
 import GalleryManagement from './GalleryManagement';
 import QueueManagement from './QueueManagement';
+import StudentManagement from './StudentManagement';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,16 +30,17 @@ const AdminDashboard = ({ onLogout }) => {
   const [showMenuManagement, setShowMenuManagement] = useState(false);
   const [showGalleryManagement, setShowGalleryManagement] = useState(false);
   const [showQueueManagement, setShowQueueManagement] = useState(false);
+  const [showStudentManagement, setShowStudentManagement] = useState(false);
   const username = localStorage.getItem('username');
   
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
   useEffect(() => {
-    if (!showUserManagement && !showMenuManagement && !showGalleryManagement && !showQueueManagement) {
+    if (!showUserManagement && !showMenuManagement && !showGalleryManagement && !showQueueManagement && !showStudentManagement) {
       fetchSummary();
       checkDailyNotification();
     }
-  }, [selectedDate, showUserManagement, showMenuManagement, showGalleryManagement, showQueueManagement]);
+  }, [selectedDate, showUserManagement, showMenuManagement, showGalleryManagement, showQueueManagement, showStudentManagement]);
 
   const checkDailyNotification = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -106,6 +108,10 @@ const AdminDashboard = ({ onLogout }) => {
 
   if (showQueueManagement) {
     return <QueueManagement onBack={() => setShowQueueManagement(false)} />;
+  }
+
+  if (showStudentManagement) {
+    return <StudentManagement onBack={() => setShowStudentManagement(false)} />;
   }
 
   return (
@@ -196,6 +202,15 @@ const AdminDashboard = ({ onLogout }) => {
               >
                 <ListOrdered size={18} style={{ marginRight: '0.5rem' }} />
                 Gerenciar Filas
+              </button>
+
+              <button
+                className="manage-students-button"
+                onClick={() => setShowStudentManagement(true)}
+                data-testid="manage-students-button"
+              >
+                <GraduationCap size={18} style={{ marginRight: '0.5rem' }} />
+                Cadastro de Alunos
               </button>
 
               <AlertDialog>

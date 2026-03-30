@@ -139,6 +139,36 @@ class QueueScheduleCreate(BaseModel):
     week_start: str
     schedule: dict
 
+# Student Models
+class Student(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    class_id: str
+
+class StudentCreate(BaseModel):
+    name: str
+    class_id: str
+
+class StudentUpdate(BaseModel):
+    name: Optional[str] = None
+    class_id: Optional[str] = None
+
+# Attendance Models
+class AttendanceRecord(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    class_id: str
+    date: str
+    present_student_ids: List[str]
+    count: int
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_by: str
+
+class AttendanceCreate(BaseModel):
+    class_id: str
+    present_student_ids: List[str]
+
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -547,6 +577,141 @@ async def get_queue_by_week(week_start: str, current_user: User = Depends(get_cu
         schedule['updated_at'] = datetime.fromisoformat(schedule['updated_at'])
     
     return schedule
+
+# Student CRUD Routes
+@api_router.post("/students")
+async def create_student(student_data: StudentCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage students")
+    
+    class_exists = await db.classes.find_one({"id": student_data.class_id})
+    if not class_exists:
+        raise HTTPException(status_code=400, detail="Invalid class ID")
+    
+    new_student = Student(**student_data.model_dump())
+    await db.students.insert_one(new_student.model_dump())
+    return {"message": "Student created successfully", "id": new_student.id}
+
+@api_router.get("/students")
+async def get_students(class_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    query = {}
+    if class_id:
+        query["class_id"] = class_id
+    students = await db.students.find(query, {"_id": 0}).sort("name", 1).to_list(5000)
+    return students
+
+@api_router.put("/students/{student_id}")
+async def update_student(student_id: str, student_data: StudentUpdate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage students")
+    
+    update_fields = {k: v for k, v in student_data.model_dump().items() if v is not None}
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    if "class_id" in update_fields:
+        class_exists = await db.classes.find_one({"id": update_fields["class_id"]})
+        if not class_exists:
+            raise HTTPException(status_code=400, detail="Invalid class ID")
+    
+    result = await db.students.update_one({"id": student_id}, {"$set": update_fields})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"message": "Student updated successfully"}
+
+@api_router.delete("/students/{student_id}")
+async def delete_student(student_id: str, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage students")
+    
+    result = await db.students.delete_one({"id": student_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"message": "Student deleted successfully"}
+
+@api_router.post("/students/bulk")
+async def create_students_bulk(students: List[StudentCreate], current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage students")
+    
+    created = 0
+    for s in students:
+        class_exists = await db.classes.find_one({"id": s.class_id})
+        if class_exists:
+            new_student = Student(**s.model_dump())
+            await db.students.insert_one(new_student.model_dump())
+            created += 1
+    return {"message": f"{created} students created successfully"}
+
+# Attendance Routes
+@api_router.post("/attendance")
+async def submit_attendance(data: AttendanceCreate, current_user: User = Depends(get_current_user)):
+    if current_user.role == "leader" and data.class_id != current_user.class_id:
+        raise HTTPException(status_code=403, detail="You can only update your own class")
+    
+    today = date.today().isoformat()
+    count = len(data.present_student_ids)
+    
+    existing = await db.attendance.find_one({"class_id": data.class_id, "date": today})
+    
+    if existing:
+        await db.attendance.update_one(
+            {"class_id": data.class_id, "date": today},
+            {"$set": {
+                "present_student_ids": data.present_student_ids,
+                "count": count,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.username
+            }}
+        )
+    else:
+        record = AttendanceRecord(
+            class_id=data.class_id,
+            date=today,
+            present_student_ids=data.present_student_ids,
+            count=count,
+            updated_by=current_user.username
+        )
+        doc = record.model_dump()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        await db.attendance.insert_one(doc)
+    
+    # Also update daily_counts for backward compat with admin dashboard
+    existing_count = await db.daily_counts.find_one({"class_id": data.class_id, "date": today})
+    if existing_count:
+        await db.daily_counts.update_one(
+            {"class_id": data.class_id, "date": today},
+            {"$set": {
+                "count": count,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.username
+            }}
+        )
+    else:
+        new_count = DailyCount(
+            class_id=data.class_id,
+            date=today,
+            count=count,
+            updated_by=current_user.username
+        )
+        doc = new_count.model_dump()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        await db.daily_counts.insert_one(doc)
+    
+    return {"message": "Attendance submitted successfully", "count": count}
+
+@api_router.get("/attendance/today")
+async def get_today_attendance(class_id: str, current_user: User = Depends(get_current_user)):
+    today = date.today().isoformat()
+    record = await db.attendance.find_one({"class_id": class_id, "date": today}, {"_id": 0})
+    if not record:
+        return {"present_student_ids": [], "count": 0}
+    return {
+        "present_student_ids": record.get("present_student_ids", []),
+        "count": record.get("count", 0),
+        "updated_at": record.get("updated_at"),
+        "updated_by": record.get("updated_by")
+    }
 
 app.include_router(api_router)
 

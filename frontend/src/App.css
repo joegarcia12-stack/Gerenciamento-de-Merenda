@@ -699,6 +699,25 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 6px 24px rgba(38, 198, 218, 0.4);
 }
 
+.manage-students-button {
+  background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+  color: white;
+  border: none;
+  padding: 0.625rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
+}
+
+.manage-students-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(76, 175, 80, 0.4);
+}
+
 .auto-generate-button {
   background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%);
   color: white;
@@ -1164,7 +1183,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: linear-gradient(135deg, #B2EBF2 0%, #80DEEA 50%, #4DD0E1 100%);
 }
 
 .carousel-loading {

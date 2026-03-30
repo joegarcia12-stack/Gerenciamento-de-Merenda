@@ -1,89 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PhotoCarousel = ({ photos }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loadedImages, setLoadedImages] = useState({});
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [imageLoadErrors, setImageLoadErrors] = useState({});
 
+  // Preload current and next images
   useEffect(() => {
-    if (photos.length === 0) return;
+    if (!photos || photos.length === 0) return;
 
-    // Preload images
-    let loadedCount = 0;
-    const errors = {};
-
-    photos.forEach((photo, index) => {
-      const img = new Image();
-      img.onload = () => {
-        loadedCount++;
-        if (loadedCount === photos.length) {
-          setImagesLoaded(true);
-        }
-      };
-      img.onerror = () => {
-        errors[index] = true;
-        loadedCount++;
-        if (loadedCount === photos.length) {
-          setImagesLoaded(true);
-          setImageLoadErrors(errors);
-        }
-      };
-      img.src = photo.url;
+    const toPreload = [currentIndex, (currentIndex + 1) % photos.length];
+    toPreload.forEach((idx) => {
+      if (!loadedImages[idx]) {
+        const img = new Image();
+        img.onload = () => {
+          setLoadedImages((prev) => ({ ...prev, [idx]: true }));
+        };
+        img.onerror = () => {
+          setLoadedImages((prev) => ({ ...prev, [idx]: 'error' }));
+        };
+        img.src = photos[idx].url;
+      }
     });
-  }, [photos]);
+  }, [photos, currentIndex]);
 
   useEffect(() => {
-    if (photos.length === 0 || !imagesLoaded) return;
+    if (!photos || photos.length <= 1) return;
 
     const interval = setInterval(() => {
       handleNext();
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [currentIndex, photos.length, imagesLoaded]);
+  }, [currentIndex, photos]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
+    if (!photos || photos.length <= 1) return;
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % photos.length);
       setIsTransitioning(false);
     }, 300);
-  };
+  }, [photos]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
+    if (!photos || photos.length <= 1) return;
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
       setIsTransitioning(false);
     }, 300);
-  };
+  }, [photos]);
 
-  const goToSlide = (index) => {
+  const goToSlide = useCallback((index) => {
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentIndex(index);
       setIsTransitioning(false);
     }, 300);
-  };
+  }, []);
 
-  if (!photos || photos.length === 0) {
-    return null;
-  }
+  if (!photos || photos.length === 0) return null;
 
-  if (!imagesLoaded) {
-    return (
-      <div className="carousel-container" data-testid="photo-carousel">
-        <div className="carousel-wrapper">
-          <div className="carousel-loading">
-            <div className="spinner"></div>
-            <p>Carregando fotos...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const currentLoaded = loadedImages[currentIndex] === true;
+  const currentError = loadedImages[currentIndex] === 'error';
 
   return (
     <div className="carousel-container" data-testid="photo-carousel">
@@ -97,18 +78,28 @@ const PhotoCarousel = ({ photos }) => {
         </button>
 
         <div className="carousel-content">
-          {!imageLoadErrors[currentIndex] ? (
-            <img
-              src={photos[currentIndex].url}
-              alt={photos[currentIndex].caption || 'Foto'}
-              className={`carousel-image-element ${isTransitioning ? 'transitioning' : ''}`}
-            />
-          ) : (
+          {currentError ? (
             <div className="carousel-image-error">
               <p>Erro ao carregar imagem</p>
             </div>
+          ) : (
+            <>
+              {!currentLoaded && (
+                <div className="carousel-loading">
+                  <div className="spinner"></div>
+                  <p>Carregando...</p>
+                </div>
+              )}
+              <img
+                src={photos[currentIndex].url}
+                alt={photos[currentIndex].caption || 'Foto'}
+                className={`carousel-image-element ${isTransitioning ? 'transitioning' : ''}`}
+                style={{ display: currentLoaded ? 'block' : 'none' }}
+                data-testid="carousel-image"
+              />
+            </>
           )}
-          {photos[currentIndex].caption && (
+          {photos[currentIndex].caption && currentLoaded && (
             <div className="carousel-caption">
               {photos[currentIndex].caption}
             </div>
@@ -124,16 +115,18 @@ const PhotoCarousel = ({ photos }) => {
         </button>
       </div>
 
-      <div className="carousel-indicators">
-        {photos.map((_, index) => (
-          <button
-            key={index}
-            className={`carousel-indicator ${index === currentIndex ? 'active' : ''}`}
-            onClick={() => goToSlide(index)}
-            data-testid={`carousel-indicator-${index}`}
-          />
-        ))}
-      </div>
+      {photos.length > 1 && (
+        <div className="carousel-indicators">
+          {photos.map((_, index) => (
+            <button
+              key={index}
+              className={`carousel-indicator ${index === currentIndex ? 'active' : ''}`}
+              onClick={() => goToSlide(index)}
+              data-testid={`carousel-indicator-${index}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
