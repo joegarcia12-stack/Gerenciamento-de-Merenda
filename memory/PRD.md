@@ -27,7 +27,12 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 - [x] Gerenciar cardápio semanal
 - [x] Gerenciar mural de fotos (upload)
 - [x] Gerenciar escalas de filas (geração aleatória)
-- [x] **Cadastro de Alunos** - CRUD individual por turma (nome + turma)
+### Cadastro de Alunos (Admin)
+- [x] CRUD individual por turma (nome + turma + matrícula)
+- [x] **Importação via CSV** - formato `Turma;Nome;Matricula` (separador `;`)
+- [x] Tratamento de erros no CSV (turma inválida, linhas incompletas)
+- [x] Suporte a encoding UTF-8 e Latin-1
+- [x] Busca por nome ou matrícula
 - [x] Zerar banco de dados
 
 ### Painel do Líder
@@ -50,7 +55,7 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 ## Schema do Banco (MongoDB)
 - `users`: id, username, password_hash, role, class_id
 - `classes`: id, name
-- `students`: id, name, class_id
+- `students`: id, name, class_id, matricula
 - `attendance`: id, class_id, date, present_student_ids[], count, updated_at, updated_by
 - `daily_counts`: id, class_id, date, count, updated_at, updated_by
 - `weekly_menus`: id, week_start, monday-friday (dict), updated_at
@@ -60,7 +65,7 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 ## API Endpoints
 - POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
 - GET /api/classes
-- POST/GET/PUT/DELETE /api/students, POST /api/students/bulk
+- POST/GET/PUT/DELETE /api/students, POST /api/students/bulk, POST /api/students/import-csv
 - POST /api/attendance, GET /api/attendance/today
 - POST /api/counts, GET /api/counts/today
 - GET /api/dashboard/summary

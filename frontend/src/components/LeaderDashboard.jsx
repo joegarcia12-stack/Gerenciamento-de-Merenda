@@ -218,6 +218,11 @@ const LeaderDashboard = ({ onLogout }) => {
                         flex: 1
                       }}>
                         {student.name}
+                        {student.matricula && (
+                          <span style={{ fontSize: '0.8rem', color: '#9e9e9e', marginLeft: '0.5rem', fontWeight: 400 }}>
+                            ({student.matricula})
+                          </span>
+                        )}
                       </span>
                       {isPresent && (
                         <span style={{

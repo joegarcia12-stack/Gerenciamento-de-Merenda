@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
-import { ArrowLeft, UserPlus, Trash2, Pencil, Search, Users, X, Check } from 'lucide-react';
+import { ArrowLeft, UserPlus, Trash2, Pencil, Search, Users, X, Check, Upload, FileText } from 'lucide-react';
 
 const StudentManagement = ({ onBack }) => {
   const [classes, setClasses] = useState([]);
@@ -10,10 +10,15 @@ const StudentManagement = ({ onBack }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentMatricula, setNewStudentMatricula] = useState('');
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [editMatricula, setEditMatricula] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchClasses();
@@ -50,9 +55,14 @@ const StudentManagement = ({ onBack }) => {
     if (!name) return;
     setAdding(true);
     try {
-      await axios.post(`${API}/students`, { name, class_id: selectedClassId }, { headers: getAuthHeaders() });
+      await axios.post(`${API}/students`, {
+        name,
+        class_id: selectedClassId,
+        matricula: newStudentMatricula.trim() || null
+      }, { headers: getAuthHeaders() });
       toast.success('Aluno adicionado!');
       setNewStudentName('');
+      setNewStudentMatricula('');
       fetchStudents();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erro ao adicionar aluno');
@@ -75,7 +85,10 @@ const StudentManagement = ({ onBack }) => {
     const name = editName.trim();
     if (!name) return;
     try {
-      await axios.put(`${API}/students/${id}`, { name }, { headers: getAuthHeaders() });
+      await axios.put(`${API}/students/${id}`, {
+        name,
+        matricula: editMatricula.trim() || null
+      }, { headers: getAuthHeaders() });
       toast.success('Aluno atualizado!');
       setEditingId(null);
       fetchStudents();
@@ -84,8 +97,35 @@ const StudentManagement = ({ onBack }) => {
     }
   };
 
+  const handleCsvImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportResult(null);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await axios.post(`${API}/students/import-csv`, formData, {
+        headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' }
+      });
+      setImportResult(res.data);
+      toast.success(res.data.message);
+      fetchStudents();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erro ao importar CSV');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const selectedClass = classes.find(c => c.id === selectedClassId);
-  const filtered = students.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = students.filter(s =>
+    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.matricula && s.matricula.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <div className="dashboard-container" data-testid="student-management">
@@ -100,6 +140,7 @@ const StudentManagement = ({ onBack }) => {
 
       <div className="dashboard-content">
         <div className="content-card">
+          {/* Filters Row */}
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
             <select
               value={selectedClassId}
@@ -124,7 +165,7 @@ const StudentManagement = ({ onBack }) => {
               <Search size={20} color="#00838F" />
               <input
                 type="text"
-                placeholder="Buscar aluno..."
+                placeholder="Buscar por nome ou matrícula..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 data-testid="search-student"
@@ -145,8 +186,87 @@ const StudentManagement = ({ onBack }) => {
             </div>
           </div>
 
+          {/* CSV Import Section */}
+          <div style={{
+            background: '#F1F8E9',
+            border: '2px dashed #AED581',
+            borderRadius: '12px',
+            padding: '1rem 1.5rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            flexWrap: 'wrap'
+          }}>
+            <FileText size={24} color="#558B2F" />
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <p style={{ color: '#33691E', fontWeight: 600, margin: 0 }}>Importar alunos via CSV</p>
+              <p style={{ color: '#558B2F', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
+                Formato: <code style={{ background: '#DCEDC8', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>Turma;Nome;Matricula</code> (separado por ;)
+              </p>
+            </div>
+            <input
+              type="file"
+              accept=".csv,.txt"
+              ref={fileInputRef}
+              onChange={handleCsvImport}
+              style={{ display: 'none' }}
+              data-testid="csv-file-input"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              data-testid="import-csv-button"
+              style={{
+                background: 'linear-gradient(135deg, #8BC34A 0%, #689F38 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 12px rgba(139, 195, 74, 0.3)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <Upload size={18} />
+              {importing ? 'Importando...' : 'Selecionar CSV'}
+            </button>
+          </div>
+
+          {/* Import Result */}
+          {importResult && (
+            <div style={{
+              background: importResult.errors?.length > 0 ? '#FFF3E0' : '#E8F5E9',
+              border: `1px solid ${importResult.errors?.length > 0 ? '#FFB74D' : '#81C784'}`,
+              borderRadius: '12px',
+              padding: '1rem 1.5rem',
+              marginBottom: '1.5rem'
+            }}
+              data-testid="import-result"
+            >
+              <p style={{ fontWeight: 600, color: '#333', margin: '0 0 0.5rem' }}>
+                Resultado: {importResult.created} importado(s), {importResult.skipped} ignorado(s)
+              </p>
+              {importResult.errors?.length > 0 && (
+                <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem', color: '#E65100', fontSize: '0.9rem' }}>
+                  {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                </ul>
+              )}
+              <button
+                onClick={() => setImportResult(null)}
+                style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', marginTop: '0.5rem', fontSize: '0.85rem' }}
+              >
+                Fechar
+              </button>
+            </div>
+          )}
+
           {/* Add Student Form */}
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
             <input
               type="text"
               placeholder="Nome do aluno"
@@ -155,7 +275,25 @@ const StudentManagement = ({ onBack }) => {
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               data-testid="new-student-name"
               style={{
+                flex: 2,
+                minWidth: '200px',
+                padding: '0.75rem 1rem',
+                border: '2px solid #B2EBF2',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                color: '#006064'
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Matrícula"
+              value={newStudentMatricula}
+              onChange={(e) => setNewStudentMatricula(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+              data-testid="new-student-matricula"
+              style={{
                 flex: 1,
+                minWidth: '120px',
                 padding: '0.75rem 1rem',
                 border: '2px solid #B2EBF2',
                 borderRadius: '12px',
@@ -187,6 +325,7 @@ const StudentManagement = ({ onBack }) => {
                   <tr>
                     <th style={{ width: '40px' }}>#</th>
                     <th>Nome do Aluno</th>
+                    <th>Matrícula</th>
                     <th style={{ width: '120px', textAlign: 'center' }}>Ações</th>
                   </tr>
                 </thead>
@@ -213,6 +352,30 @@ const StudentManagement = ({ onBack }) => {
                               }}
                               autoFocus
                             />
+                          </div>
+                        ) : (
+                          <strong>{student.name}</strong>
+                        )}
+                      </td>
+                      <td>
+                        {editingId === student.id ? (
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              value={editMatricula}
+                              onChange={(e) => setEditMatricula(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleEdit(student.id)}
+                              data-testid={`edit-matricula-${student.id}`}
+                              placeholder="Matrícula"
+                              style={{
+                                flex: 1,
+                                padding: '0.5rem',
+                                border: '2px solid #00BCD4',
+                                borderRadius: '8px',
+                                fontSize: '0.95rem',
+                                color: '#006064'
+                              }}
+                            />
                             <button
                               onClick={() => handleEdit(student.id)}
                               style={{ background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', display: 'flex' }}
@@ -228,14 +391,14 @@ const StudentManagement = ({ onBack }) => {
                             </button>
                           </div>
                         ) : (
-                          <strong>{student.name}</strong>
+                          <span style={{ color: '#00838F' }}>{student.matricula || '—'}</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         {editingId !== student.id && (
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                             <button
-                              onClick={() => { setEditingId(student.id); setEditName(student.name); }}
+                              onClick={() => { setEditingId(student.id); setEditName(student.name); setEditMatricula(student.matricula || ''); }}
                               data-testid={`edit-student-${student.id}`}
                               style={{
                                 background: 'linear-gradient(135deg, #FFB74D 0%, #FFA726 100%)',

@@ -15,6 +15,8 @@ from passlib.context import CryptContext
 import jwt
 from jwt import PyJWTError
 import shutil
+import csv
+import io
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -145,14 +147,17 @@ class Student(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     class_id: str
+    matricula: Optional[str] = None
 
 class StudentCreate(BaseModel):
     name: str
     class_id: str
+    matricula: Optional[str] = None
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
     class_id: Optional[str] = None
+    matricula: Optional[str] = None
 
 # Attendance Models
 class AttendanceRecord(BaseModel):
@@ -642,6 +647,72 @@ async def create_students_bulk(students: List[StudentCreate], current_user: User
             await db.students.insert_one(new_student.model_dump())
             created += 1
     return {"message": f"{created} students created successfully"}
+
+@api_router.post("/students/import-csv")
+async def import_students_csv(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can import students")
+    
+    content = await file.read()
+    # Try utf-8-sig first (handles BOM), then latin-1
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = content.decode("latin-1")
+    
+    reader = csv.reader(io.StringIO(text), delimiter=';')
+    
+    # Get all classes for matching
+    all_classes = await db.classes.find({}, {"_id": 0}).to_list(1000)
+    class_map = {}
+    for c in all_classes:
+        class_map[c["name"].strip().lower()] = c["id"]
+    
+    created = 0
+    skipped = 0
+    errors = []
+    header_skipped = False
+    
+    for row_num, row in enumerate(reader, 1):
+        if len(row) < 2:
+            continue
+        
+        # Clean fields
+        fields = [f.strip() for f in row]
+        
+        # Skip header row
+        if not header_skipped:
+            first = fields[0].lower()
+            if first in ("turma", "classe", "class", "sala"):
+                header_skipped = True
+                continue
+            header_skipped = True
+        
+        turma_name = fields[0]
+        nome = fields[1]
+        matricula = fields[2] if len(fields) > 2 else None
+        
+        if not turma_name or not nome:
+            skipped += 1
+            continue
+        
+        # Match class by name (case-insensitive)
+        class_id = class_map.get(turma_name.strip().lower())
+        if not class_id:
+            errors.append(f"Linha {row_num}: Turma '{turma_name}' não encontrada")
+            skipped += 1
+            continue
+        
+        new_student = Student(name=nome, class_id=class_id, matricula=matricula)
+        await db.students.insert_one(new_student.model_dump())
+        created += 1
+    
+    return {
+        "message": f"{created} aluno(s) importado(s) com sucesso",
+        "created": created,
+        "skipped": skipped,
+        "errors": errors
+    }
 
 # Attendance Routes
 @api_router.post("/attendance")
