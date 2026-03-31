@@ -18,7 +18,9 @@ import shutil
 import csv
 import io
 import asyncio
-import resend
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -34,9 +36,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production'
 ALGORITHM = "HS256"
 security = HTTPBearer()
 
-# Email (Resend)
-resend.api_key = os.environ.get('RESEND_API_KEY', '')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+# Email (Gmail SMTP)
+GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
+GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '')
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -784,9 +786,10 @@ async def submit_attendance(data: AttendanceCreate, current_user: User = Depends
         doc['updated_at'] = doc['updated_at'].isoformat()
         await db.daily_counts.insert_one(doc)
     
-    # Send emails to parents of present students (async, non-blocking)
+    # Send emails to parents of present students via Gmail SMTP
     emails_sent = 0
-    if data.present_student_ids and resend.api_key:
+    email_errors = []
+    if data.present_student_ids and GMAIL_EMAIL and GMAIL_PASSWORD:
         class_info = await db.classes.find_one({"id": data.class_id}, {"_id": 0})
         class_name = class_info["name"] if class_info else "Turma"
         today_formatted = datetime.now().strftime("%d/%m/%Y")
@@ -796,45 +799,63 @@ async def submit_attendance(data: AttendanceCreate, current_user: User = Depends
             {"_id": 0}
         ).to_list(5000)
         
-        for student in present_students:
-            email = student.get("email_responsavel", "").strip()
-            if not email:
-                continue
-            try:
-                params = {
-                    "from": SENDER_EMAIL,
-                    "to": [email],
-                    "subject": f"Presença confirmada - {student['name']} - {today_formatted}",
-                    "html": f"""
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                            <div style="background: linear-gradient(135deg, #4DD0E1, #00BCD4); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
-                                <h1 style="color: white; margin: 0; font-size: 22px;">IEMA Pleno Matões</h1>
-                                <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0;">Controle de Presença</p>
-                            </div>
-                            <div style="background: #ffffff; padding: 24px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
-                                <p style="color: #333; font-size: 16px; line-height: 1.6;">
-                                    Prezado(a) responsável,
-                                </p>
-                                <p style="color: #333; font-size: 16px; line-height: 1.6;">
-                                    Informamos que o(a) aluno(a) <strong>{student['name']}</strong> 
-                                    da <strong>{class_name}</strong> está presente na escola hoje, 
-                                    <strong>{today_formatted}</strong>.
-                                </p>
-                                <div style="background: #E8F5E9; border-left: 4px solid #4CAF50; padding: 12px 16px; border-radius: 4px; margin: 20px 0;">
-                                    <p style="color: #2E7D32; margin: 0; font-weight: bold;">Presença Confirmada</p>
+        students_to_email = [(s["name"], s.get("email_responsavel", "").strip()) for s in present_students if s.get("email_responsavel", "").strip()]
+        
+        if students_to_email:
+            def send_gmail_batch():
+                sent = 0
+                errs = []
+                try:
+                    server = smtplib.SMTP("smtp.gmail.com", 587)
+                    server.starttls()
+                    server.login(GMAIL_EMAIL, GMAIL_PASSWORD)
+                    
+                    for student_name, recipient_email in students_to_email:
+                        try:
+                            msg = MIMEMultipart("alternative")
+                            msg["From"] = GMAIL_EMAIL
+                            msg["To"] = recipient_email
+                            msg["Subject"] = f"Presença confirmada - {student_name} - {today_formatted}"
+                            
+                            html_body = f"""
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                                <div style="background: linear-gradient(135deg, #4DD0E1, #00BCD4); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
+                                    <h1 style="color: white; margin: 0; font-size: 22px;">IEMA Pleno Matões</h1>
+                                    <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0;">Controle de Presença</p>
                                 </div>
-                                <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                                    Atenciosamente,<br>
-                                    <strong>Gestão Escolar - IEMA Pleno Matões</strong>
-                                </p>
+                                <div style="background: #ffffff; padding: 24px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
+                                    <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                                        Prezado(a) responsável,
+                                    </p>
+                                    <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                                        Informamos que o(a) aluno(a) <strong>{student_name}</strong> 
+                                        da <strong>{class_name}</strong> está presente na escola hoje, 
+                                        <strong>{today_formatted}</strong>.
+                                    </p>
+                                    <div style="background: #E8F5E9; border-left: 4px solid #4CAF50; padding: 12px 16px; border-radius: 4px; margin: 20px 0;">
+                                        <p style="color: #2E7D32; margin: 0; font-weight: bold;">Presença Confirmada</p>
+                                    </div>
+                                    <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                                        Atenciosamente,<br>
+                                        <strong>Gestão Escolar - IEMA Pleno Matões</strong>
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    """
-                }
-                await asyncio.to_thread(resend.Emails.send, params)
-                emails_sent += 1
-            except Exception as e:
-                logger.error(f"Failed to send email to {email}: {str(e)}")
+                            """
+                            msg.attach(MIMEText(html_body, "html"))
+                            server.sendmail(GMAIL_EMAIL, recipient_email, msg.as_string())
+                            sent += 1
+                        except Exception as e:
+                            errs.append(f"{recipient_email}: {str(e)}")
+                    
+                    server.quit()
+                except Exception as e:
+                    errs.append(f"SMTP connection error: {str(e)}")
+                return sent, errs
+            
+            emails_sent, email_errors = await asyncio.to_thread(send_gmail_batch)
+            for err in email_errors:
+                logger.error(f"Email error: {err}")
     
     return {"message": "Attendance submitted successfully", "count": count, "emails_sent": emails_sent}
 
