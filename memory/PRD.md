@@ -14,7 +14,9 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 ### Autenticação e Usuários
 - [x] Login/Registro com roles (admin, leader)
 - [x] JWT authentication
+- [x] **Token de cadastro (1012)** — obrigatório para registrar nova conta
 - [x] Admin gerencia contas de usuários
+- [x] **Admin edita username/senha/turma dos líderes** via interface
 
 ### Página Inicial (Pública)
 - [x] Mural de fotos (carrossel vertical full-screen)

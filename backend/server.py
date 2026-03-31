@@ -39,6 +39,7 @@ security = HTTPBearer()
 # Email (Gmail SMTP)
 GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '')
+REGISTRATION_TOKEN = "1012"
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -60,6 +61,12 @@ class UserCreate(BaseModel):
     username: str
     password: str
     role: str
+    class_id: Optional[str] = None
+    registration_token: str
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
     class_id: Optional[str] = None
 
 class LoginRequest(BaseModel):
@@ -218,6 +225,9 @@ async def root():
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     try:
+        if user_data.registration_token != REGISTRATION_TOKEN:
+            raise HTTPException(status_code=403, detail="Token de cadastro inválido")
+        
         existing = await db.users.find_one({"username": user_data.username})
         if existing:
             raise HTTPException(status_code=400, detail="Username already exists")
@@ -470,6 +480,41 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"message": "User deleted successfully"}
+
+@api_router.put("/admin/users/{user_id}")
+async def update_user(user_id: str, data: UserUpdate, current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can edit users")
+    
+    user_to_edit = await db.users.find_one({"id": user_id})
+    if not user_to_edit:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    update_fields = {}
+    
+    if data.username:
+        existing = await db.users.find_one({"username": data.username, "id": {"$ne": user_id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        update_fields["username"] = data.username
+    
+    if data.password:
+        if len(data.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        update_fields["password_hash"] = get_password_hash(data.password)
+    
+    if data.class_id is not None:
+        if data.class_id:
+            class_exists = await db.classes.find_one({"id": data.class_id})
+            if not class_exists:
+                raise HTTPException(status_code=400, detail="Invalid class ID")
+        update_fields["class_id"] = data.class_id
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_fields})
+    return {"message": "User updated successfully"}
 
 # Gallery Routes
 @api_router.post("/gallery/upload")

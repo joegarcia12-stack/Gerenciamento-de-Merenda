@@ -13,6 +13,7 @@ const Login = ({ onLogin, initialMode = 'login', onClose }) => {
   const [classId, setClassId] = useState('');
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [registrationToken, setRegistrationToken] = useState('');
 
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
@@ -76,7 +77,8 @@ const Login = ({ onLogin, initialMode = 'login', onClose }) => {
         username,
         password,
         role,
-        class_id: role === 'leader' ? classId : null
+        class_id: role === 'leader' ? classId : null,
+        registration_token: registrationToken
       });
 
       toast.success('Cadastro realizado com sucesso! Faça login para continuar.');
@@ -97,6 +99,7 @@ const Login = ({ onLogin, initialMode = 'login', onClose }) => {
     setConfirmPassword('');
     setClassId('');
     setRole('leader');
+    setRegistrationToken('');
   };
 
   const toggleMode = () => {
@@ -161,6 +164,22 @@ const Login = ({ onLogin, initialMode = 'login', onClose }) => {
 
           {isRegister && (
             <>
+              <div className="form-group">
+                <label htmlFor="registrationToken">Token de Cadastro</label>
+                <div className="input-wrapper">
+                  <Lock className="input-icon" size={20} />
+                  <input
+                    id="registrationToken"
+                    type="text"
+                    data-testid="registration-token-input"
+                    value={registrationToken}
+                    onChange={(e) => setRegistrationToken(e.target.value)}
+                    placeholder="Digite o token de cadastro"
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="confirmPassword">Confirmar Senha</label>
                 <div className="input-wrapper">
