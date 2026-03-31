@@ -662,11 +662,16 @@ async def import_students_csv(file: UploadFile = File(...), current_user: User =
     
     reader = csv.reader(io.StringIO(text), delimiter=';')
     
-    # Get all classes for matching
+    # Get all classes for matching - support multiple formats
     all_classes = await db.classes.find({}, {"_id": 0}).to_list(1000)
     class_map = {}
     for c in all_classes:
-        class_map[c["name"].strip().lower()] = c["id"]
+        full_name = c["name"].strip().lower()
+        class_map[full_name] = c["id"]
+        # Extract number part (e.g. "Turma 100" -> "100")
+        parts = full_name.split()
+        if len(parts) > 1:
+            class_map[parts[-1]] = c["id"]
     
     created = 0
     skipped = 0
