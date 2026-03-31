@@ -34,10 +34,11 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 - [x] Suporte a encoding UTF-8 e Latin-1
 - [x] Busca por nome, matrícula ou e-mail
 
-### E-mail Automático (Resend)
+### E-mail Automático (Gmail SMTP)
 - [x] Envio automático de e-mail ao responsável quando aluno é marcado como presente
 - [x] E-mail com template HTML profissional (IEMA Pleno Matões)
-- [x] Integração via Resend API (não-bloqueante com asyncio)
+- [x] Integração via Gmail SMTP (não-bloqueante com asyncio)
+- [x] Remetente: gerenciamentoiema@gmail.com
 - [x] Zerar banco de dados
 
 ### Painel do Líder
