@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
-import { ArrowLeft, AlertTriangle, Search, Users, Filter, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Search, Users, ShieldAlert, CalendarDays } from 'lucide-react';
+import { Calendar } from '../components/ui/calendar';
+import { Popover, PopoverTrigger, PopoverContent } from '../components/ui/popover';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const BolsaFamiliaManagement = ({ onBack }) => {
   const [classes, setClasses] = useState([]);
@@ -13,13 +17,19 @@ const BolsaFamiliaManagement = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [showAlertsOnly, setShowAlertsOnly] = useState(false);
 
+  // Calendar state
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+
   useEffect(() => {
     fetchClasses();
   }, []);
 
   useEffect(() => {
     fetchReport();
-  }, [selectedClassId, period]);
+  }, [selectedClassId, period, startDate, endDate]);
 
   const fetchClasses = async () => {
     try {
@@ -35,6 +45,10 @@ const BolsaFamiliaManagement = ({ onBack }) => {
     try {
       const params = new URLSearchParams({ period });
       if (selectedClassId) params.append('class_id', selectedClassId);
+      if (period === 'custom' && startDate && endDate) {
+        params.append('start', formatISO(startDate));
+        params.append('end', formatISO(endDate));
+      }
       const res = await axios.get(`${API}/attendance/report?${params}`, { headers: getAuthHeaders() });
       setReport(res.data);
     } catch {
@@ -44,6 +58,39 @@ const BolsaFamiliaManagement = ({ onBack }) => {
     }
   };
 
+  const formatISO = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handlePeriodChange = (p) => {
+    setPeriod(p);
+    if (p !== 'custom') {
+      setStartDate(null);
+      setEndDate(null);
+    }
+  };
+
+  const handleStartSelect = (date) => {
+    setStartDate(date);
+    setStartOpen(false);
+    if (!endDate || date > endDate) {
+      setEndDate(date);
+    }
+    setPeriod('custom');
+  };
+
+  const handleEndSelect = (date) => {
+    setEndDate(date);
+    setEndOpen(false);
+    if (!startDate || date < startDate) {
+      setStartDate(date);
+    }
+    setPeriod('custom');
+  };
+
   const filtered = report?.students?.filter(s => {
     const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.matricula && s.matricula.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -51,12 +98,17 @@ const BolsaFamiliaManagement = ({ onBack }) => {
     return matchSearch && matchAlert;
   }) || [];
 
-  const periodLabel = { monthly: 'Mensal', semester: 'Semestral' };
+  const periodLabels = { monthly: 'Mensal', semester: 'Semestral', custom: 'Personalizado' };
 
-  const formatDate = (dateStr) => {
+  const formatDateBR = (dateStr) => {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-');
     return `${d}/${m}/${y}`;
+  };
+
+  const formatCalendarDisplay = (date) => {
+    if (!date) return 'Selecionar data';
+    return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   };
 
   return (
@@ -99,33 +151,29 @@ const BolsaFamiliaManagement = ({ onBack }) => {
         )}
 
         <div className="content-card">
-          {/* Filters */}
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
-            {/* Period Filter */}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {['monthly', 'semester'].map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  data-testid={`period-${p}`}
-                  style={{
-                    padding: '0.6rem 1.25rem',
-                    borderRadius: '10px',
-                    border: period === p ? 'none' : '2px solid #B2EBF2',
-                    background: period === p ? 'linear-gradient(135deg, #4DD0E1 0%, #00BCD4 100%)' : 'white',
-                    color: period === p ? 'white' : '#006064',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {periodLabel[p]}
-                </button>
-              ))}
-            </div>
+          {/* Period Buttons + Class Filter */}
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
+            {['monthly', 'semester'].map(p => (
+              <button
+                key={p}
+                onClick={() => handlePeriodChange(p)}
+                data-testid={`period-${p}`}
+                style={{
+                  padding: '0.6rem 1.25rem',
+                  borderRadius: '10px',
+                  border: period === p ? 'none' : '2px solid #B2EBF2',
+                  background: period === p ? 'linear-gradient(135deg, #4DD0E1 0%, #00BCD4 100%)' : 'white',
+                  color: period === p ? 'white' : '#006064',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {periodLabels[p]}
+              </button>
+            ))}
 
-            {/* Class Filter */}
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
@@ -146,27 +194,6 @@ const BolsaFamiliaManagement = ({ onBack }) => {
               ))}
             </select>
 
-            {/* Search */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '180px' }}>
-              <Search size={18} color="#00838F" />
-              <input
-                type="text"
-                placeholder="Buscar aluno ou matrícula..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                data-testid="search-student"
-                style={{
-                  flex: 1,
-                  padding: '0.6rem 1rem',
-                  border: '2px solid #B2EBF2',
-                  borderRadius: '10px',
-                  fontSize: '0.95rem',
-                  color: '#006064'
-                }}
-              />
-            </div>
-
-            {/* Alert filter toggle */}
             <button
               onClick={() => setShowAlertsOnly(!showAlertsOnly)}
               data-testid="alert-filter"
@@ -190,11 +217,140 @@ const BolsaFamiliaManagement = ({ onBack }) => {
             </button>
           </div>
 
+          {/* Calendar Date Range Pickers */}
+          <div style={{
+            display: 'flex',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            marginBottom: '1rem',
+            alignItems: 'center',
+            background: period === 'custom' ? '#E0F7FA' : '#F5F5F5',
+            padding: '0.75rem 1rem',
+            borderRadius: '12px',
+            border: period === 'custom' ? '2px solid #4DD0E1' : '1px solid #E0E0E0',
+            transition: 'all 0.3s ease'
+          }}>
+            <CalendarDays size={20} color="#00838F" />
+            <span style={{ color: '#006064', fontWeight: 600, fontSize: '0.9rem' }}>Período:</span>
+
+            {/* Start Date Picker */}
+            <Popover open={startOpen} onOpenChange={setStartOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  data-testid="start-date-picker"
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '10px',
+                    border: '2px solid #B2EBF2',
+                    background: 'white',
+                    color: startDate ? '#006064' : '#9e9e9e',
+                    fontWeight: startDate ? 600 : 400,
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    minWidth: '200px'
+                  }}
+                >
+                  <CalendarDays size={16} />
+                  {formatCalendarDisplay(startDate)}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start" style={{ zIndex: 9999 }}>
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={handleStartSelect}
+                  locale={ptBR}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <span style={{ color: '#006064', fontWeight: 500 }}>até</span>
+
+            {/* End Date Picker */}
+            <Popover open={endOpen} onOpenChange={setEndOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  data-testid="end-date-picker"
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '10px',
+                    border: '2px solid #B2EBF2',
+                    background: 'white',
+                    color: endDate ? '#006064' : '#9e9e9e',
+                    fontWeight: endDate ? 600 : 400,
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    minWidth: '200px'
+                  }}
+                >
+                  <CalendarDays size={16} />
+                  {formatCalendarDisplay(endDate)}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start" style={{ zIndex: 9999 }}>
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={handleEndSelect}
+                  locale={ptBR}
+                  disabled={(date) => date > new Date() || (startDate && date < startDate)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            {period === 'custom' && startDate && endDate && (
+              <button
+                onClick={() => handlePeriodChange('monthly')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#00838F',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  textDecoration: 'underline'
+                }}
+              >
+                Limpar datas
+              </button>
+            )}
+          </div>
+
+          {/* Search */}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '180px' }}>
+              <Search size={18} color="#00838F" />
+              <input
+                type="text"
+                placeholder="Buscar aluno ou matrícula..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                data-testid="search-student"
+                style={{
+                  flex: 1,
+                  padding: '0.6rem 1rem',
+                  border: '2px solid #B2EBF2',
+                  borderRadius: '10px',
+                  fontSize: '0.95rem',
+                  color: '#006064'
+                }}
+              />
+            </div>
+          </div>
+
           {/* Period info */}
           {report && (
             <div style={{
               display: 'flex',
-              gap: '1rem',
+              gap: '0.75rem',
               marginBottom: '1.5rem',
               flexWrap: 'wrap',
               alignItems: 'center'
@@ -207,7 +363,7 @@ const BolsaFamiliaManagement = ({ onBack }) => {
                 fontSize: '0.85rem',
                 fontWeight: 500
               }}>
-                Período: {formatDate(report.start_date)} a {formatDate(report.end_date)}
+                {formatDateBR(report.start_date)} a {formatDateBR(report.end_date)}
               </span>
               <span style={{
                 background: '#E0F7FA',
@@ -220,6 +376,19 @@ const BolsaFamiliaManagement = ({ onBack }) => {
                 <Users size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
                 {filtered.length} aluno(s)
               </span>
+              {report.alert_count > 0 && (
+                <span style={{
+                  background: '#FFEBEE',
+                  color: '#C62828',
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '8px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600
+                }}>
+                  <AlertTriangle size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                  {report.alert_count} alerta(s)
+                </span>
+              )}
             </div>
           )}
 

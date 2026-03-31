@@ -36,7 +36,7 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 
 ### Bolsa Família (Admin)
 - [x] Tela de monitoramento de frequência escolar
-- [x] Filtros: Mensal, Semestral, por turma, por aluno (busca)
+- [x] Filtros: Mensal, Semestral, **Calendário personalizado** (data início/fim), por turma, por aluno (busca)
 - [x] Tabela com: nome, turma, matrícula, dias letivos, presenças, faltas, % presença, % falta
 - [x] Alerta visual (vermelho) quando falta >= 26%
 - [x] Banner resumo com total de alunos em alerta

@@ -877,6 +877,8 @@ async def get_attendance_report(
     period: str = "monthly",
     class_id: Optional[str] = None,
     student_id: Optional[str] = None,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
     if current_user.role != "admin":
@@ -884,18 +886,22 @@ async def get_attendance_report(
     
     today = date.today()
     
-    if period == "monthly":
+    if start and end:
+        start_date = start
+        end_date = end
+    elif period == "monthly":
         start_date = today.replace(day=1).isoformat()
+        end_date = today.isoformat()
     elif period == "semester":
         # First semester: Jan-Jun, Second: Jul-Dec
         if today.month <= 6:
             start_date = today.replace(month=1, day=1).isoformat()
         else:
             start_date = today.replace(month=7, day=1).isoformat()
+        end_date = today.isoformat()
     else:
         start_date = today.replace(month=1, day=1).isoformat()
-    
-    end_date = today.isoformat()
+        end_date = today.isoformat()
     
     # Get students
     student_query = {}
