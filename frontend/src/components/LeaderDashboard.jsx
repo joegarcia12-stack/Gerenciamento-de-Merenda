@@ -71,7 +71,10 @@ const LeaderDashboard = ({ onLogout }) => {
         class_id: classId,
         present_student_ids: Array.from(presentIds)
       }, { headers: getAuthHeaders() });
-      toast.success(`Chamada registrada! ${presentIds.size} aluno(s) presente(s).`);
+      const emailCount = students.filter(s => presentIds.has(s.id) && s.email_responsavel).length;
+      let msg = `Chamada registrada! ${presentIds.size} aluno(s) presente(s).`;
+      if (emailCount > 0) msg += ` ${emailCount} e-mail(s) enviado(s) aos responsáveis.`;
+      toast.success(msg);
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao registrar chamada');

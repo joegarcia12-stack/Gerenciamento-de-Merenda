@@ -28,11 +28,16 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 - [x] Gerenciar mural de fotos (upload)
 - [x] Gerenciar escalas de filas (geração aleatória)
 ### Cadastro de Alunos (Admin)
-- [x] CRUD individual por turma (nome + turma + matrícula)
-- [x] **Importação via CSV** - formato `Turma;Nome;Matricula` (separador `;`)
+- [x] CRUD individual por turma (nome + turma + matrícula + e-mail do responsável)
+- [x] **Importação via CSV** - formato `Turma;Nome;Matricula;Email` (separador `;`)
 - [x] Tratamento de erros no CSV (turma inválida, linhas incompletas)
 - [x] Suporte a encoding UTF-8 e Latin-1
-- [x] Busca por nome ou matrícula
+- [x] Busca por nome, matrícula ou e-mail
+
+### E-mail Automático (Resend)
+- [x] Envio automático de e-mail ao responsável quando aluno é marcado como presente
+- [x] E-mail com template HTML profissional (IEMA Pleno Matões)
+- [x] Integração via Resend API (não-bloqueante com asyncio)
 - [x] Zerar banco de dados
 
 ### Painel do Líder
@@ -55,7 +60,7 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 ## Schema do Banco (MongoDB)
 - `users`: id, username, password_hash, role, class_id
 - `classes`: id, name
-- `students`: id, name, class_id, matricula
+- `students`: id, name, class_id, matricula, email_responsavel
 - `attendance`: id, class_id, date, present_student_ids[], count, updated_at, updated_by
 - `daily_counts`: id, class_id, date, count, updated_at, updated_by
 - `weekly_menus`: id, week_start, monday-friday (dict), updated_at

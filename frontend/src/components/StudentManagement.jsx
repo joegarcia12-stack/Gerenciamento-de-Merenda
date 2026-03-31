@@ -11,10 +11,12 @@ const StudentManagement = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
   const [newStudentMatricula, setNewStudentMatricula] = useState('');
+  const [newStudentEmail, setNewStudentEmail] = useState('');
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editMatricula, setEditMatricula] = useState('');
+  const [editEmail, setEditEmail] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
@@ -58,11 +60,13 @@ const StudentManagement = ({ onBack }) => {
       await axios.post(`${API}/students`, {
         name,
         class_id: selectedClassId,
-        matricula: newStudentMatricula.trim() || null
+        matricula: newStudentMatricula.trim() || null,
+        email_responsavel: newStudentEmail.trim() || null
       }, { headers: getAuthHeaders() });
       toast.success('Aluno adicionado!');
       setNewStudentName('');
       setNewStudentMatricula('');
+      setNewStudentEmail('');
       fetchStudents();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erro ao adicionar aluno');
@@ -87,7 +91,8 @@ const StudentManagement = ({ onBack }) => {
     try {
       await axios.put(`${API}/students/${id}`, {
         name,
-        matricula: editMatricula.trim() || null
+        matricula: editMatricula.trim() || null,
+        email_responsavel: editEmail.trim() || null
       }, { headers: getAuthHeaders() });
       toast.success('Aluno atualizado!');
       setEditingId(null);
@@ -124,7 +129,8 @@ const StudentManagement = ({ onBack }) => {
   const selectedClass = classes.find(c => c.id === selectedClassId);
   const filtered = students.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.matricula && s.matricula.toLowerCase().includes(searchTerm.toLowerCase()))
+    (s.matricula && s.matricula.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (s.email_responsavel && s.email_responsavel.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -202,7 +208,7 @@ const StudentManagement = ({ onBack }) => {
             <div style={{ flex: 1, minWidth: '200px' }}>
               <p style={{ color: '#33691E', fontWeight: 600, margin: 0 }}>Importar alunos via CSV</p>
               <p style={{ color: '#558B2F', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
-                Formato: <code style={{ background: '#DCEDC8', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>Turma;Nome;Matricula</code> (separado por ;)
+                Formato: <code style={{ background: '#DCEDC8', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>Turma;Nome;Matricula;Email</code> (separado por ;)
               </p>
             </div>
             <input
@@ -301,6 +307,23 @@ const StudentManagement = ({ onBack }) => {
                 color: '#006064'
               }}
             />
+            <input
+              type="email"
+              placeholder="E-mail do responsável"
+              value={newStudentEmail}
+              onChange={(e) => setNewStudentEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+              data-testid="new-student-email"
+              style={{
+                flex: 2,
+                minWidth: '200px',
+                padding: '0.75rem 1rem',
+                border: '2px solid #B2EBF2',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                color: '#006064'
+              }}
+            />
             <button
               className="add-photo-button"
               onClick={handleAdd}
@@ -326,6 +349,7 @@ const StudentManagement = ({ onBack }) => {
                     <th style={{ width: '40px' }}>#</th>
                     <th>Nome do Aluno</th>
                     <th>Matrícula</th>
+                    <th>E-mail Responsável</th>
                     <th style={{ width: '120px', textAlign: 'center' }}>Ações</th>
                   </tr>
                 </thead>
@@ -376,6 +400,36 @@ const StudentManagement = ({ onBack }) => {
                                 color: '#006064'
                               }}
                             />
+                          </div>
+                        ) : (
+                          <span style={{ color: '#00838F' }}>{student.matricula || '—'}</span>
+                        )}
+                      </td>
+                      <td>
+                        {editingId === student.id ? (
+                          <input
+                            type="email"
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleEdit(student.id)}
+                            data-testid={`edit-email-${student.id}`}
+                            placeholder="E-mail"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              border: '2px solid #00BCD4',
+                              borderRadius: '8px',
+                              fontSize: '0.95rem',
+                              color: '#006064'
+                            }}
+                          />
+                        ) : (
+                          <span style={{ color: '#00838F', fontSize: '0.9rem' }}>{student.email_responsavel || '—'}</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {editingId === student.id ? (
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                             <button
                               onClick={() => handleEdit(student.id)}
                               style={{ background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', display: 'flex' }}
@@ -391,14 +445,9 @@ const StudentManagement = ({ onBack }) => {
                             </button>
                           </div>
                         ) : (
-                          <span style={{ color: '#00838F' }}>{student.matricula || '—'}</span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {editingId !== student.id && (
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                             <button
-                              onClick={() => { setEditingId(student.id); setEditName(student.name); setEditMatricula(student.matricula || ''); }}
+                              onClick={() => { setEditingId(student.id); setEditName(student.name); setEditMatricula(student.matricula || ''); setEditEmail(student.email_responsavel || ''); }}
                               data-testid={`edit-student-${student.id}`}
                               style={{
                                 background: 'linear-gradient(135deg, #FFB74D 0%, #FFA726 100%)',

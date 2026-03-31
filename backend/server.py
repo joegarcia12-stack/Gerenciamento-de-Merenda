@@ -17,6 +17,8 @@ from jwt import PyJWTError
 import shutil
 import csv
 import io
+import asyncio
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -31,6 +33,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 ALGORITHM = "HS256"
 security = HTTPBearer()
+
+# Email (Resend)
+resend.api_key = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -148,16 +154,19 @@ class Student(BaseModel):
     name: str
     class_id: str
     matricula: Optional[str] = None
+    email_responsavel: Optional[str] = None
 
 class StudentCreate(BaseModel):
     name: str
     class_id: str
     matricula: Optional[str] = None
+    email_responsavel: Optional[str] = None
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
     class_id: Optional[str] = None
     matricula: Optional[str] = None
+    email_responsavel: Optional[str] = None
 
 # Attendance Models
 class AttendanceRecord(BaseModel):
@@ -695,7 +704,8 @@ async def import_students_csv(file: UploadFile = File(...), current_user: User =
         
         turma_name = fields[0]
         nome = fields[1]
-        matricula = fields[2] if len(fields) > 2 else None
+        matricula = fields[2] if len(fields) > 2 and fields[2] else None
+        email_responsavel = fields[3] if len(fields) > 3 and fields[3] else None
         
         if not turma_name or not nome:
             skipped += 1
@@ -708,7 +718,7 @@ async def import_students_csv(file: UploadFile = File(...), current_user: User =
             skipped += 1
             continue
         
-        new_student = Student(name=nome, class_id=class_id, matricula=matricula)
+        new_student = Student(name=nome, class_id=class_id, matricula=matricula, email_responsavel=email_responsavel)
         await db.students.insert_one(new_student.model_dump())
         created += 1
     
@@ -774,7 +784,59 @@ async def submit_attendance(data: AttendanceCreate, current_user: User = Depends
         doc['updated_at'] = doc['updated_at'].isoformat()
         await db.daily_counts.insert_one(doc)
     
-    return {"message": "Attendance submitted successfully", "count": count}
+    # Send emails to parents of present students (async, non-blocking)
+    emails_sent = 0
+    if data.present_student_ids and resend.api_key:
+        class_info = await db.classes.find_one({"id": data.class_id}, {"_id": 0})
+        class_name = class_info["name"] if class_info else "Turma"
+        today_formatted = datetime.now().strftime("%d/%m/%Y")
+        
+        present_students = await db.students.find(
+            {"id": {"$in": data.present_student_ids}, "email_responsavel": {"$ne": None}},
+            {"_id": 0}
+        ).to_list(5000)
+        
+        for student in present_students:
+            email = student.get("email_responsavel", "").strip()
+            if not email:
+                continue
+            try:
+                params = {
+                    "from": SENDER_EMAIL,
+                    "to": [email],
+                    "subject": f"Presença confirmada - {student['name']} - {today_formatted}",
+                    "html": f"""
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <div style="background: linear-gradient(135deg, #4DD0E1, #00BCD4); padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 22px;">IEMA Pleno Matões</h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0;">Controle de Presença</p>
+                            </div>
+                            <div style="background: #ffffff; padding: 24px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
+                                <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                                    Prezado(a) responsável,
+                                </p>
+                                <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                                    Informamos que o(a) aluno(a) <strong>{student['name']}</strong> 
+                                    da <strong>{class_name}</strong> está presente na escola hoje, 
+                                    <strong>{today_formatted}</strong>.
+                                </p>
+                                <div style="background: #E8F5E9; border-left: 4px solid #4CAF50; padding: 12px 16px; border-radius: 4px; margin: 20px 0;">
+                                    <p style="color: #2E7D32; margin: 0; font-weight: bold;">Presença Confirmada</p>
+                                </div>
+                                <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                                    Atenciosamente,<br>
+                                    <strong>Gestão Escolar - IEMA Pleno Matões</strong>
+                                </p>
+                            </div>
+                        </div>
+                    """
+                }
+                await asyncio.to_thread(resend.Emails.send, params)
+                emails_sent += 1
+            except Exception as e:
+                logger.error(f"Failed to send email to {email}: {str(e)}")
+    
+    return {"message": "Attendance submitted successfully", "count": count, "emails_sent": emails_sent}
 
 @api_router.get("/attendance/today")
 async def get_today_attendance(class_id: str, current_user: User = Depends(get_current_user)):
