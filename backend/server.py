@@ -872,6 +872,112 @@ async def get_today_attendance(class_id: str, current_user: User = Depends(get_c
         "updated_by": record.get("updated_by")
     }
 
+@api_router.get("/attendance/report")
+async def get_attendance_report(
+    period: str = "monthly",
+    class_id: Optional[str] = None,
+    student_id: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view reports")
+    
+    today = date.today()
+    
+    if period == "monthly":
+        start_date = today.replace(day=1).isoformat()
+    elif period == "semester":
+        # First semester: Jan-Jun, Second: Jul-Dec
+        if today.month <= 6:
+            start_date = today.replace(month=1, day=1).isoformat()
+        else:
+            start_date = today.replace(month=7, day=1).isoformat()
+    else:
+        start_date = today.replace(month=1, day=1).isoformat()
+    
+    end_date = today.isoformat()
+    
+    # Get students
+    student_query = {}
+    if class_id:
+        student_query["class_id"] = class_id
+    if student_id:
+        student_query["id"] = student_id
+    
+    students = await db.students.find(student_query, {"_id": 0}).sort("name", 1).to_list(5000)
+    
+    if not students:
+        return {"students": [], "period": period, "start_date": start_date, "end_date": end_date}
+    
+    # Get all classes for names
+    all_classes = await db.classes.find({}, {"_id": 0}).to_list(1000)
+    class_names = {c["id"]: c["name"] for c in all_classes}
+    
+    # Group students by class to count school days per class
+    class_ids = list(set(s["class_id"] for s in students))
+    
+    # Get attendance records in the period per class
+    attendance_records = await db.attendance.find(
+        {"date": {"$gte": start_date, "$lte": end_date}, "class_id": {"$in": class_ids}},
+        {"_id": 0}
+    ).to_list(50000)
+    
+    # Count school days per class (days where attendance was taken)
+    school_days_per_class = {}
+    # Map: (class_id, date) -> set of present student ids
+    attendance_map = {}
+    for rec in attendance_records:
+        cid = rec["class_id"]
+        d = rec["date"]
+        if cid not in school_days_per_class:
+            school_days_per_class[cid] = set()
+        school_days_per_class[cid].add(d)
+        attendance_map[(cid, d)] = set(rec.get("present_student_ids", []))
+    
+    result = []
+    for student in students:
+        sid = student["id"]
+        cid = student["class_id"]
+        total_days = len(school_days_per_class.get(cid, set()))
+        
+        if total_days == 0:
+            present_days = 0
+            presence_pct = 0.0
+            absence_pct = 0.0
+        else:
+            present_days = 0
+            for d in school_days_per_class.get(cid, set()):
+                if sid in attendance_map.get((cid, d), set()):
+                    present_days += 1
+            presence_pct = round((present_days / total_days) * 100, 1)
+            absence_pct = round(100 - presence_pct, 1)
+        
+        result.append({
+            "student_id": sid,
+            "name": student["name"],
+            "matricula": student.get("matricula"),
+            "class_id": cid,
+            "class_name": class_names.get(cid, ""),
+            "total_days": total_days,
+            "present_days": present_days,
+            "absent_days": total_days - present_days,
+            "presence_pct": presence_pct,
+            "absence_pct": absence_pct,
+            "alert": absence_pct >= 26
+        })
+    
+    # Sort by absence percentage descending (most critical first)
+    result.sort(key=lambda x: x["absence_pct"], reverse=True)
+    
+    return {
+        "students": result,
+        "period": period,
+        "start_date": start_date,
+        "end_date": end_date,
+        "total_students": len(result),
+        "alert_count": sum(1 for r in result if r["alert"])
+    }
+
 app.include_router(api_router)
 
 app.add_middleware(

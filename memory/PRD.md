@@ -34,7 +34,13 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 - [x] Suporte a encoding UTF-8 e Latin-1
 - [x] Busca por nome, matrícula ou e-mail
 
-### E-mail Automático (Gmail SMTP)
+### Bolsa Família (Admin)
+- [x] Tela de monitoramento de frequência escolar
+- [x] Filtros: Mensal, Semestral, por turma, por aluno (busca)
+- [x] Tabela com: nome, turma, matrícula, dias letivos, presenças, faltas, % presença, % falta
+- [x] Alerta visual (vermelho) quando falta >= 26%
+- [x] Banner resumo com total de alunos em alerta
+- [x] Filtro para exibir apenas alunos em alerta
 - [x] Envio automático de e-mail ao responsável quando aluno é marcado como presente
 - [x] E-mail com template HTML profissional (IEMA Pleno Matões)
 - [x] Integração via Gmail SMTP (não-bloqueante com asyncio)
