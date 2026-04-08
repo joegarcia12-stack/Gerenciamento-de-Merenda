@@ -277,7 +277,7 @@ const AdminDashboard = ({ onLogout, userRole }) => {
                 data-testid="manage-bolsa-button"
               >
                 <ShieldAlert size={18} style={{ marginRight: '0.5rem' }} />
-                Bolsa Família
+                Frequência
               </button>
 
               <AlertDialog>

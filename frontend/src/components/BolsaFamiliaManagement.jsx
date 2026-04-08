@@ -119,7 +119,7 @@ const BolsaFamiliaManagement = ({ onBack }) => {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1>Bolsa Família</h1>
+            <h1>Frequência</h1>
             <p style={{ color: '#00838F', fontSize: '0.95rem', marginTop: '0.25rem' }}>Monitoramento de frequência escolar</p>
           </div>
         </div>
