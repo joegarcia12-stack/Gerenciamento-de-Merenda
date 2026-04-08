@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
-import { Users, Calendar, LogOut, RefreshCw, Trash2, Bell, UserCog, UtensilsCrossed, Images, ListOrdered, GraduationCap, ShieldAlert } from 'lucide-react';
+import { Users, Calendar, LogOut, RefreshCw, Trash2, Bell, UserCog, UtensilsCrossed, Images, ListOrdered, GraduationCap, ShieldAlert, Lock } from 'lucide-react';
 import UserManagement from './UserManagement';
 import MenuManagement from './MenuManagement';
 import GalleryManagement from './GalleryManagement';
@@ -21,7 +21,8 @@ import {
   AlertDialogTrigger,
 } from './ui/alert-dialog';
 
-const AdminDashboard = ({ onLogout }) => {
+const AdminDashboard = ({ onLogout, userRole }) => {
+  const isMaster = userRole === 'master';
   const [summary, setSummary] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,9 @@ const AdminDashboard = ({ onLogout }) => {
   const [showQueueManagement, setShowQueueManagement] = useState(false);
   const [showStudentManagement, setShowStudentManagement] = useState(false);
   const [showBolsaFamilia, setShowBolsaFamilia] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [currentToken, setCurrentToken] = useState('');
+  const [newToken, setNewToken] = useState('');
   const username = localStorage.getItem('username');
   
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
@@ -87,6 +91,29 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
 
+  const fetchToken = async () => {
+    try {
+      const res = await axios.get(`${API}/master/token`, { headers: getAuthHeaders() });
+      setCurrentToken(res.data.token);
+      setNewToken(res.data.token);
+      setShowTokenModal(true);
+    } catch {
+      toast.error('Erro ao buscar token');
+    }
+  };
+
+  const handleUpdateToken = async () => {
+    if (!newToken.trim()) return;
+    try {
+      await axios.put(`${API}/master/token`, { token: newToken.trim() }, { headers: getAuthHeaders() });
+      toast.success('Token de cadastro atualizado!');
+      setCurrentToken(newToken.trim());
+      setShowTokenModal(false);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erro ao atualizar token');
+    }
+  };
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('pt-BR', {
@@ -97,7 +124,7 @@ const AdminDashboard = ({ onLogout }) => {
   };
 
   if (showUserManagement) {
-    return <UserManagement onBack={() => setShowUserManagement(false)} />;
+    return <UserManagement onBack={() => setShowUserManagement(false)} isMaster={isMaster} />;
   }
 
   if (showMenuManagement) {
@@ -126,7 +153,32 @@ const AdminDashboard = ({ onLogout }) => {
         <h1>Painel de Gestão Escolar</h1>
         <div className="user-info">
           <img src={logoUrl} alt="IEMA" style={{ height: '40px', marginRight: '1rem' }} />
-          <span className="user-badge" data-testid="admin-username-display">{username}</span>
+          <span className="user-badge" data-testid="admin-username-display">
+            {isMaster && <span style={{ background: '#FFD600', color: '#333', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, marginRight: '0.5rem' }}>MASTER</span>}
+            {username}
+          </span>
+          {isMaster && (
+            <button
+              onClick={fetchToken}
+              data-testid="manage-token-button"
+              style={{
+                background: 'linear-gradient(135deg, #FFD600 0%, #FFC107 100%)',
+                color: '#333',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '10px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <Lock size={16} />
+              Token
+            </button>
+          )}
           <button
             className="logout-button"
             onClick={onLogout}
@@ -323,6 +375,61 @@ const AdminDashboard = ({ onLogout }) => {
           )}
         </div>
       </div>
+
+      {/* Token Modal (Master only) */}
+      {showTokenModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+        }} onClick={() => setShowTokenModal(false)}>
+          <div style={{
+            background: 'white', borderRadius: '16px', padding: '2rem',
+            width: '90%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#006064', marginBottom: '0.5rem' }}>Alterar Token de Cadastro</h3>
+            <p style={{ color: '#00838F', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Token atual: <strong>{currentToken}</strong>
+            </p>
+            <input
+              type="text"
+              value={newToken}
+              onChange={(e) => setNewToken(e.target.value)}
+              data-testid="new-token-input"
+              placeholder="Novo token"
+              style={{
+                width: '100%', padding: '0.75rem 1rem',
+                border: '2px solid #FFD600', borderRadius: '12px',
+                fontSize: '1.1rem', color: '#006064', fontWeight: 600,
+                textAlign: 'center', letterSpacing: '2px',
+                marginBottom: '1.5rem', boxSizing: 'border-box'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => setShowTokenModal(false)}
+                style={{
+                  flex: 1, padding: '0.75rem', borderRadius: '10px',
+                  border: '2px solid #E0E0E0', background: 'white',
+                  color: '#666', fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateToken}
+                data-testid="save-token-button"
+                style={{
+                  flex: 1, padding: '0.75rem', borderRadius: '10px',
+                  border: 'none', background: 'linear-gradient(135deg, #FFD600 0%, #FFC107 100%)',
+                  color: '#333', fontWeight: 700, cursor: 'pointer'
+                }}
+              >
+                Salvar Token
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -102,8 +102,8 @@ function App() {
             <Route
               path="/admin"
               element={
-                userRole === 'admin' ? (
-                  <AdminDashboard onLogout={handleLogout} />
+                (userRole === 'admin' || userRole === 'master') ? (
+                  <AdminDashboard onLogout={handleLogout} userRole={userRole} />
                 ) : (
                   <Navigate to="/" replace />
                 )

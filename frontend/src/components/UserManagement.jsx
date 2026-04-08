@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from './ui/alert-dialog';
 
-const UserManagement = ({ onBack }) => {
+const UserManagement = ({ onBack, isMaster }) => {
   const [users, setUsers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -112,7 +112,7 @@ const UserManagement = ({ onBack }) => {
   };
 
   const leaderUsers = users.filter(u => u.role === 'leader');
-  const adminUsers = users.filter(u => u.role === 'admin');
+  const adminUsers = users.filter(u => u.role === 'admin' || u.role === 'master');
 
   return (
     <div className="dashboard-container" data-testid="user-management">
@@ -184,10 +184,37 @@ const UserManagement = ({ onBack }) => {
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Shield size={16} color="#00BCD4" />
                                 <strong>{user.username}</strong>
+                                {user.role === 'master' && (
+                                  <span style={{ background: '#FFD600', color: '#333', padding: '0.1rem 0.4rem', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700 }}>MASTER</span>
+                                )}
                               </div>
                             </td>
-                            <td><span className="shift-badge morning">Admin</span></td>
-                            <td><span style={{ color: '#00838F', fontSize: '0.9rem' }}>Protegido</span></td>
+                            <td><span className="shift-badge morning">{user.role === 'master' ? 'Master' : 'Admin'}</span></td>
+                            <td>
+                              {isMaster && user.role !== 'master' ? (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <button className="delete-user-button" data-testid={`delete-admin-${user.id}`}>
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Excluir Administrador</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Tem certeza que deseja excluir o administrador <strong>{user.username}</strong>?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteUser(user.id, user.username)}>Sim, Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              ) : (
+                                <span style={{ color: '#00838F', fontSize: '0.9rem' }}>Protegido</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

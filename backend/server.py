@@ -40,6 +40,8 @@ security = HTTPBearer()
 GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '')
 REGISTRATION_TOKEN = "1012"
+MASTER_USERNAME = "joegarcia12"
+MASTER_PASSWORD = "Annyvitoria12#"
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -225,7 +227,11 @@ async def root():
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     try:
-        if user_data.registration_token != REGISTRATION_TOKEN:
+        # Get current registration token from DB
+        config = await db.app_config.find_one({"key": "registration_token"}, {"_id": 0})
+        current_token = config["value"] if config else REGISTRATION_TOKEN
+        
+        if user_data.registration_token != current_token:
             raise HTTPException(status_code=403, detail="Token de cadastro inválido")
         
         existing = await db.users.find_one({"username": user_data.username})
@@ -342,7 +348,7 @@ async def get_today_counts(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/dashboard/summary", response_model=DashboardSummary)
 async def get_dashboard_summary(target_date: Optional[str] = None, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can access dashboard")
     
     if not target_date:
@@ -377,7 +383,7 @@ async def get_dashboard_summary(target_date: Optional[str] = None, current_user:
 # Weekly Menu Routes
 @api_router.post("/menu/weekly")
 async def create_or_update_weekly_menu(menu_data: WeeklyMenuCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can manage menu")
     
     existing = await db.weekly_menus.find_one({"week_start": menu_data.week_start})
@@ -418,7 +424,7 @@ async def get_current_week_menu():
 
 @api_router.get("/menu/by-week/{week_start}")
 async def get_menu_by_week(week_start: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can view menus")
     
     menu = await db.weekly_menus.find_one({"week_start": week_start}, {"_id": 0})
@@ -433,7 +439,7 @@ async def get_menu_by_week(week_start: str, current_user: User = Depends(get_cur
 
 @api_router.get("/menu/all")
 async def get_all_menus(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can view all menus")
     
     menus = await db.weekly_menus.find({}, {"_id": 0}).sort("week_start", -1).to_list(100)
@@ -441,7 +447,7 @@ async def get_all_menus(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/admin/reset-database")
 async def reset_database(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can reset database")
     
     result = await db.daily_counts.delete_many({})
@@ -449,7 +455,7 @@ async def reset_database(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/admin/reset-user-accounts")
 async def reset_user_accounts(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can reset user accounts")
     
     result = await db.users.delete_many({"role": {"$ne": "admin"}})
@@ -457,7 +463,7 @@ async def reset_user_accounts(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/admin/users")
 async def get_all_users(current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can view users")
     
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
@@ -465,15 +471,18 @@ async def get_all_users(current_user: User = Depends(get_current_user)):
 
 @api_router.delete("/admin/users/{user_id}")
 async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can delete users")
     
     user_to_delete = await db.users.find_one({"id": user_id})
     if not user_to_delete:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if user_to_delete["role"] == "admin":
-        raise HTTPException(status_code=403, detail="Cannot delete admin users")
+    if user_to_delete["role"] == "master":
+        raise HTTPException(status_code=403, detail="Cannot delete master user")
+    
+    if user_to_delete["role"] == "admin" and current_user.role != "master":
+        raise HTTPException(status_code=403, detail="Only master can delete admin users")
     
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count == 0:
@@ -483,7 +492,7 @@ async def delete_user(user_id: str, current_user: User = Depends(get_current_use
 
 @api_router.put("/admin/users/{user_id}")
 async def update_user(user_id: str, data: UserUpdate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can edit users")
     
     user_to_edit = await db.users.find_one({"id": user_id})
@@ -516,6 +525,28 @@ async def update_user(user_id: str, data: UserUpdate, current_user: User = Depen
     await db.users.update_one({"id": user_id}, {"$set": update_fields})
     return {"message": "User updated successfully"}
 
+# Master-only Routes
+@api_router.get("/master/token")
+async def get_registration_token(current_user: User = Depends(get_current_user)):
+    if current_user.role != "master":
+        raise HTTPException(status_code=403, detail="Only master can view token")
+    config = await db.app_config.find_one({"key": "registration_token"}, {"_id": 0})
+    return {"token": config["value"] if config else REGISTRATION_TOKEN}
+
+@api_router.put("/master/token")
+async def update_registration_token(data: dict, current_user: User = Depends(get_current_user)):
+    if current_user.role != "master":
+        raise HTTPException(status_code=403, detail="Only master can change token")
+    new_token = data.get("token", "").strip()
+    if not new_token:
+        raise HTTPException(status_code=400, detail="Token cannot be empty")
+    await db.app_config.update_one(
+        {"key": "registration_token"},
+        {"$set": {"value": new_token}},
+        upsert=True
+    )
+    return {"message": "Token updated successfully", "token": new_token}
+
 # Gallery Routes
 @api_router.post("/gallery/upload")
 async def upload_gallery_photo(
@@ -523,7 +554,7 @@ async def upload_gallery_photo(
     caption: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can upload photos")
     
     # Validate file type
@@ -554,7 +585,7 @@ async def upload_gallery_photo(
 
 @api_router.post("/gallery/photos")
 async def add_gallery_photo(photo_data: GalleryPhotoCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can add photos")
     
     new_photo = GalleryPhoto(**photo_data.model_dump())
@@ -574,7 +605,7 @@ async def get_gallery_photos():
 
 @api_router.delete("/gallery/photos/{photo_id}")
 async def delete_gallery_photo(photo_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can delete photos")
     
     result = await db.gallery_photos.delete_one({"id": photo_id})
@@ -586,7 +617,7 @@ async def delete_gallery_photo(photo_id: str, current_user: User = Depends(get_c
 # Queue Schedule Routes
 @api_router.post("/queue/schedule")
 async def create_or_update_queue_schedule(schedule_data: QueueScheduleCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can manage queue schedules")
     
     existing = await db.queue_schedules.find_one({"week_start": schedule_data.week_start})
@@ -626,7 +657,7 @@ async def get_current_queue_schedule():
 
 @api_router.get("/queue/by-week/{week_start}")
 async def get_queue_by_week(week_start: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can view queue schedules")
     
     schedule = await db.queue_schedules.find_one({"week_start": week_start}, {"_id": 0})
@@ -642,7 +673,7 @@ async def get_queue_by_week(week_start: str, current_user: User = Depends(get_cu
 # Student CRUD Routes
 @api_router.post("/students")
 async def create_student(student_data: StudentCreate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can manage students")
     
     class_exists = await db.classes.find_one({"id": student_data.class_id})
@@ -663,7 +694,7 @@ async def get_students(class_id: Optional[str] = None, current_user: User = Depe
 
 @api_router.put("/students/{student_id}")
 async def update_student(student_id: str, student_data: StudentUpdate, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can manage students")
     
     update_fields = {k: v for k, v in student_data.model_dump().items() if v is not None}
@@ -682,7 +713,7 @@ async def update_student(student_id: str, student_data: StudentUpdate, current_u
 
 @api_router.delete("/students/{student_id}")
 async def delete_student(student_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can manage students")
     
     result = await db.students.delete_one({"id": student_id})
@@ -692,7 +723,7 @@ async def delete_student(student_id: str, current_user: User = Depends(get_curre
 
 @api_router.post("/students/bulk")
 async def create_students_bulk(students: List[StudentCreate], current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can manage students")
     
     created = 0
@@ -706,7 +737,7 @@ async def create_students_bulk(students: List[StudentCreate], current_user: User
 
 @api_router.post("/students/import-csv")
 async def import_students_csv(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can import students")
     
     content = await file.read()
@@ -926,7 +957,7 @@ async def get_attendance_report(
     end: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
+    if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can view reports")
     
     today = date.today()
@@ -1030,6 +1061,29 @@ async def get_attendance_report(
     }
 
 app.include_router(api_router)
+
+# Seed master user on startup
+@app.on_event("startup")
+async def seed_master_user():
+    existing = await db.users.find_one({"username": MASTER_USERNAME})
+    if not existing:
+        master = User(
+            username=MASTER_USERNAME,
+            password_hash=get_password_hash(MASTER_PASSWORD),
+            role="master"
+        )
+        await db.users.insert_one(master.model_dump())
+        logger.info("Master user created")
+    else:
+        # Ensure role is master and password is up to date
+        await db.users.update_one(
+            {"username": MASTER_USERNAME},
+            {"$set": {"role": "master", "password_hash": get_password_hash(MASTER_PASSWORD)}}
+        )
+    # Seed default registration token if not exists
+    config = await db.app_config.find_one({"key": "registration_token"})
+    if not config:
+        await db.app_config.insert_one({"key": "registration_token", "value": REGISTRATION_TOKEN})
 
 app.add_middleware(
     CORSMiddleware,

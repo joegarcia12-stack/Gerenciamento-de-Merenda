@@ -12,11 +12,13 @@ Sistema de gerenciamento de merenda escolar que permite Líderes de Turma regist
 ## Funcionalidades Implementadas
 
 ### Autenticação e Usuários
-- [x] Login/Registro com roles (admin, leader)
+- [x] Login/Registro com roles (master, admin, leader)
 - [x] JWT authentication
 - [x] **Token de cadastro (1012)** — obrigatório para registrar nova conta
+- [x] **Usuário Master** (joegarcia12) — acesso total: alterar token, deletar admins
 - [x] Admin gerencia contas de usuários
 - [x] **Admin edita username/senha/turma dos líderes** via interface
+- [x] **Master pode deletar admins** (admin normal não pode)
 
 ### Página Inicial (Pública)
 - [x] Mural de fotos (carrossel vertical full-screen)
