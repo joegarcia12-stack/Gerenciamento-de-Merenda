@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
-import { ArrowLeft, Trash2, Users, Shield, UserCircle, Pencil, X, Check, Lock, User } from 'lucide-react';
+import { ArrowLeft, Trash2, Users, Shield, UserCircle, Pencil, X, Check, Lock, User, UserPlus } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,10 @@ const UserManagement = ({ onBack, isMaster }) => {
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editClassId, setEditClassId] = useState('');
+  const [newLeaderUsername, setNewLeaderUsername] = useState('');
+  const [newLeaderPassword, setNewLeaderPassword] = useState('');
+  const [newLeaderClassId, setNewLeaderClassId] = useState('');
+  const [creating, setCreating] = useState(false);
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
   useEffect(() => {
@@ -83,6 +87,30 @@ const UserManagement = ({ onBack, isMaster }) => {
     setEditClassId(user.class_id || '');
   };
 
+  const handleCreateLeader = async () => {
+    if (!newLeaderUsername.trim() || !newLeaderPassword.trim()) {
+      toast.error('Preencha usuário e senha');
+      return;
+    }
+    setCreating(true);
+    try {
+      await axios.post(`${API}/admin/create-leader`, {
+        username: newLeaderUsername.trim(),
+        password: newLeaderPassword.trim(),
+        class_id: newLeaderClassId || null
+      }, { headers: getAuthHeaders() });
+      toast.success('Líder de turma criado com sucesso!');
+      setNewLeaderUsername('');
+      setNewLeaderPassword('');
+      setNewLeaderClassId('');
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao criar líder');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const handleSaveEdit = async (userId) => {
     const data = {};
     const original = users.find(u => u.id === userId);
@@ -112,7 +140,10 @@ const UserManagement = ({ onBack, isMaster }) => {
   };
 
   const leaderUsers = users.filter(u => u.role === 'leader');
-  const adminUsers = users.filter(u => u.role === 'admin' || u.role === 'master');
+  const adminUsers = users.filter(u => {
+    if (u.role === 'master') return isMaster;
+    return u.role === 'admin';
+  });
 
   return (
     <div className="dashboard-container" data-testid="user-management">
@@ -223,12 +254,83 @@ const UserManagement = ({ onBack, isMaster }) => {
                 </div>
               )}
 
-              {leaderUsers.length > 0 && (
-                <div>
-                  <h3 style={{ color: '#006064', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <UserCircle size={20} color="#4CAF50" />
-                    Líderes de Turma
-                  </h3>
+              <div>
+                <h3 style={{ color: '#006064', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <UserCircle size={20} color="#4CAF50" />
+                  Líderes de Turma
+                </h3>
+
+                {/* Add Leader Form */}
+                <div style={{
+                    background: '#E8F5E9',
+                    border: '2px solid #A5D6A7',
+                    borderRadius: '12px',
+                    padding: '1rem 1.25rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    gap: '0.75rem',
+                    flexWrap: 'wrap',
+                    alignItems: 'center'
+                  }}>
+                    <UserPlus size={20} color="#2E7D32" />
+                    <input
+                      type="text"
+                      placeholder="Usuário"
+                      value={newLeaderUsername}
+                      onChange={(e) => setNewLeaderUsername(e.target.value)}
+                      data-testid="new-leader-username"
+                      style={{
+                        padding: '0.6rem 0.8rem', border: '2px solid #A5D6A7',
+                        borderRadius: '10px', fontSize: '0.9rem', color: '#006064',
+                        minWidth: '130px', flex: 1
+                      }}
+                    />
+                    <input
+                      type="password"
+                      placeholder="Senha"
+                      value={newLeaderPassword}
+                      onChange={(e) => setNewLeaderPassword(e.target.value)}
+                      data-testid="new-leader-password"
+                      style={{
+                        padding: '0.6rem 0.8rem', border: '2px solid #A5D6A7',
+                        borderRadius: '10px', fontSize: '0.9rem', color: '#006064',
+                        minWidth: '130px', flex: 1
+                      }}
+                    />
+                    <select
+                      value={newLeaderClassId}
+                      onChange={(e) => setNewLeaderClassId(e.target.value)}
+                      data-testid="new-leader-class"
+                      style={{
+                        padding: '0.6rem 0.8rem', border: '2px solid #A5D6A7',
+                        borderRadius: '10px', fontSize: '0.9rem', color: '#006064',
+                        minWidth: '150px'
+                      }}
+                    >
+                      <option value="">Selecionar turma</option>
+                      {classes.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleCreateLeader}
+                      disabled={creating || !newLeaderUsername.trim() || !newLeaderPassword.trim()}
+                      data-testid="create-leader-button"
+                      style={{
+                        background: 'linear-gradient(135deg, #66BB6A 0%, #43A047 100%)',
+                        color: 'white', border: 'none', padding: '0.6rem 1.25rem',
+                        borderRadius: '10px', fontWeight: 600, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                        boxShadow: '0 3px 12px rgba(76,175,80,0.3)',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <UserPlus size={16} />
+                      {creating ? 'Criando...' : 'Adicionar Líder'}
+                    </button>
+                  </div>
+
+                  {leaderUsers.length > 0 ? (
                   <div className="table-container">
                     <table>
                       <thead>
@@ -378,8 +480,13 @@ const UserManagement = ({ onBack, isMaster }) => {
                       </tbody>
                     </table>
                   </div>
+                  ) : (
+                    <div className="empty-state">
+                      <Users size={36} color="#4CAF50" style={{ opacity: 0.4 }} />
+                      <p style={{ marginTop: '0.75rem', color: '#00838F' }}>Nenhum líder cadastrado. Use o formulário acima para adicionar.</p>
+                    </div>
+                  )}
                 </div>
-              )}
 
               {users.length === 0 && (
                 <div className="empty-state">

@@ -458,8 +458,39 @@ async def reset_user_accounts(current_user: User = Depends(get_current_user)):
     if current_user.role not in ("admin", "master"):
         raise HTTPException(status_code=403, detail="Only admins can reset user accounts")
     
-    result = await db.users.delete_many({"role": {"$ne": "admin"}})
+    result = await db.users.delete_many({"role": {"$nin": ["admin", "master"]}})
     return {"message": f"User accounts reset successfully. {result.deleted_count} user accounts have been deleted."}
+
+class CreateLeaderRequest(BaseModel):
+    username: str
+    password: str
+    class_id: Optional[str] = None
+
+@api_router.post("/admin/create-leader")
+async def admin_create_leader(data: CreateLeaderRequest, current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("admin", "master"):
+        raise HTTPException(status_code=403, detail="Only admins can create leaders")
+    
+    existing = await db.users.find_one({"username": data.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    if data.class_id:
+        class_exists = await db.classes.find_one({"id": data.class_id})
+        if not class_exists:
+            raise HTTPException(status_code=400, detail="Invalid class ID")
+    
+    new_user = User(
+        username=data.username,
+        password_hash=get_password_hash(data.password),
+        role="leader",
+        class_id=data.class_id
+    )
+    await db.users.insert_one(new_user.model_dump())
+    return {"message": "Leader created successfully", "id": new_user.id}
 
 @api_router.get("/admin/users")
 async def get_all_users(current_user: User = Depends(get_current_user)):
