@@ -214,36 +214,100 @@ const UserManagement = ({ onBack, isMaster }) => {
                         {adminUsers.map((user) => (
                           <tr key={user.id}>
                             <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Shield size={16} color="#00BCD4" />
-                                <strong>{user.username}</strong>
-                                {user.role === 'master' && (
-                                  <span style={{ background: '#FFD600', color: '#333', padding: '0.1rem 0.4rem', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700 }}>MASTER</span>
-                                )}
-                              </div>
+                              {editingId === user.id ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <User size={16} color="#00838F" />
+                                    <input
+                                      type="text"
+                                      value={editUsername}
+                                      onChange={(e) => setEditUsername(e.target.value)}
+                                      data-testid={`edit-admin-username-${user.id}`}
+                                      placeholder="Novo usuário"
+                                      style={{
+                                        padding: '0.4rem 0.6rem', border: '2px solid #00BCD4',
+                                        borderRadius: '8px', fontSize: '0.9rem', color: '#006064', width: '150px'
+                                      }}
+                                    />
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Lock size={16} color="#FF9800" />
+                                    <input
+                                      type="password"
+                                      value={editPassword}
+                                      onChange={(e) => setEditPassword(e.target.value)}
+                                      data-testid={`edit-admin-password-${user.id}`}
+                                      placeholder="Nova senha (opcional)"
+                                      style={{
+                                        padding: '0.4rem 0.6rem', border: '2px solid #FFB74D',
+                                        borderRadius: '8px', fontSize: '0.9rem', color: '#006064', width: '150px'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <Shield size={16} color="#00BCD4" />
+                                  <strong>{user.username}</strong>
+                                  {user.role === 'master' && (
+                                    <span style={{ background: '#FFD600', color: '#333', padding: '0.1rem 0.4rem', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700 }}>MASTER</span>
+                                  )}
+                                </div>
+                              )}
                             </td>
                             <td><span className="shift-badge morning">{user.role === 'master' ? 'Master' : 'Admin'}</span></td>
                             <td>
                               {isMaster && user.role !== 'master' ? (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <button className="delete-user-button" data-testid={`delete-admin-${user.id}`}>
-                                      <Trash2 size={16} />
+                                editingId === user.id ? (
+                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                    <button
+                                      onClick={() => handleSaveEdit(user.id)}
+                                      data-testid={`save-admin-${user.id}`}
+                                      style={{ background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', display: 'flex' }}
+                                    >
+                                      <Check size={16} />
                                     </button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Excluir Administrador</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Tem certeza que deseja excluir o administrador <strong>{user.username}</strong>?
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteUser(user.id, user.username)}>Sim, Excluir</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                    <button
+                                      onClick={() => setEditingId(null)}
+                                      style={{ background: '#9e9e9e', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', display: 'flex' }}
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                    <button
+                                      onClick={() => startEdit(user)}
+                                      data-testid={`edit-admin-${user.id}`}
+                                      style={{
+                                        background: 'linear-gradient(135deg, #FFB74D 0%, #FFA726 100%)',
+                                        color: 'white', border: 'none', borderRadius: '8px',
+                                        padding: '0.5rem', cursor: 'pointer', display: 'flex'
+                                      }}
+                                    >
+                                      <Pencil size={16} />
+                                    </button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <button className="delete-user-button" data-testid={`delete-admin-${user.id}`}>
+                                          <Trash2 size={16} />
+                                        </button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Excluir Administrador</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Tem certeza que deseja excluir o administrador <strong>{user.username}</strong>?
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDeleteUser(user.id, user.username)}>Sim, Excluir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                )
                               ) : (
                                 <span style={{ color: '#00838F', fontSize: '0.9rem' }}>Protegido</span>
                               )}
