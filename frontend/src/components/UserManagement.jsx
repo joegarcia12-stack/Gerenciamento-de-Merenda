@@ -163,7 +163,9 @@ const UserManagement = ({ onBack, isMaster }) => {
             <div>
               <h2>Contas Cadastradas</h2>
               <p style={{ color: '#00838F', marginTop: '0.5rem' }}>
-                Total: {users.length} usuários ({adminUsers.length} admin, {leaderUsers.length} líderes)
+                Total: {isMaster ? users.length : leaderUsers.length} usuários
+                {isMaster && ` (${adminUsers.length} admin, ${leaderUsers.length} líderes)`}
+                {!isMaster && ` (${leaderUsers.length} líderes)`}
               </p>
             </div>
             <AlertDialog>
@@ -193,7 +195,7 @@ const UserManagement = ({ onBack, isMaster }) => {
             <div style={{ textAlign: 'center', padding: '2rem' }}><div className="spinner"></div></div>
           ) : (
             <>
-              {adminUsers.length > 0 && (
+              {isMaster && adminUsers.length > 0 && (
                 <div style={{ marginBottom: '2rem' }}>
                   <h3 style={{ color: '#006064', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Shield size={20} color="#00BCD4" />
