@@ -23,6 +23,7 @@ const PhotoCarousel = ({ photos }) => {
         img.src = photos[idx].url;
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photos, currentIndex]);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ const PhotoCarousel = ({ photos }) => {
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [currentIndex, photos]);
+  }, [currentIndex, photos, handleNext]);
 
   const handleNext = useCallback(() => {
     if (!photos || photos.length <= 1) return;
@@ -117,9 +118,9 @@ const PhotoCarousel = ({ photos }) => {
 
       {photos.length > 1 && (
         <div className="carousel-indicators">
-          {photos.map((_, index) => (
+          {photos.map((photo, index) => (
             <button
-              key={index}
+              key={photo.id || `indicator-${index}`}
               className={`carousel-indicator ${index === currentIndex ? 'active' : ''}`}
               onClick={() => goToSlide(index)}
               data-testid={`carousel-indicator-${index}`}

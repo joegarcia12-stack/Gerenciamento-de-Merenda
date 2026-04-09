@@ -10,10 +10,10 @@ import uuid
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
-LEADER_USERNAME = "lider1"
-LEADER_PASSWORD = "lider123"
+ADMIN_USERNAME = os.environ.get('TEST_ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.environ.get('TEST_ADMIN_PASSWORD', 'admin123')
+LEADER_USERNAME = os.environ.get('TEST_LEADER_USERNAME', 'lider1')
+LEADER_PASSWORD = os.environ.get('TEST_LEADER_PASSWORD', 'lider123')
 
 
 @pytest.fixture(scope="module")

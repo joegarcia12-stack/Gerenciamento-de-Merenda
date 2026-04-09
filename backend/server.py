@@ -39,9 +39,9 @@ security = HTTPBearer()
 # Email (Gmail SMTP)
 GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', '')
 GMAIL_PASSWORD = os.environ.get('GMAIL_PASSWORD', '')
-REGISTRATION_TOKEN = "1012"
-MASTER_USERNAME = "joegarcia12"
-MASTER_PASSWORD = "Annyvitoria12#"
+REGISTRATION_TOKEN = os.environ.get('REGISTRATION_TOKEN', '1012')
+MASTER_USERNAME = os.environ.get('MASTER_USERNAME', 'joegarcia12')
+MASTER_PASSWORD = os.environ.get('MASTER_PASSWORD', 'Annyvitoria12#')
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -992,6 +992,8 @@ async def get_attendance_report(
         raise HTTPException(status_code=403, detail="Only admins can view reports")
     
     today = date.today()
+    start_date = today.replace(day=1).isoformat()
+    end_date = today.isoformat()
     
     if start and end:
         start_date = start
@@ -1000,14 +1002,10 @@ async def get_attendance_report(
         start_date = today.replace(day=1).isoformat()
         end_date = today.isoformat()
     elif period == "semester":
-        # First semester: Jan-Jun, Second: Jul-Dec
         if today.month <= 6:
             start_date = today.replace(month=1, day=1).isoformat()
         else:
             start_date = today.replace(month=7, day=1).isoformat()
-        end_date = today.isoformat()
-    else:
-        start_date = today.replace(month=1, day=1).isoformat()
         end_date = today.isoformat()
     
     # Get students
