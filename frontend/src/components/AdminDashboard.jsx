@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API, getAuthHeaders } from '../App';
 import { toast } from 'sonner';
@@ -41,14 +41,7 @@ const AdminDashboard = ({ onLogout, userRole }) => {
   
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
-  useEffect(() => {
-    if (!showUserManagement && !showMenuManagement && !showGalleryManagement && !showQueueManagement && !showStudentManagement && !showBolsaFamilia) {
-      fetchSummary();
-      checkDailyNotification();
-    }
-  }, [selectedDate, showUserManagement, showMenuManagement, showGalleryManagement, showQueueManagement, showStudentManagement, showBolsaFamilia]);
-
-  const checkDailyNotification = () => {
+  const checkDailyNotification = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
     const lastNotification = localStorage.getItem('lastNotification');
     
@@ -56,9 +49,9 @@ const AdminDashboard = ({ onLogout, userRole }) => {
       setShowNotification(true);
       localStorage.setItem('lastNotification', today);
     }
-  };
+  }, []);
 
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API}/dashboard/summary`, {
@@ -74,7 +67,14 @@ const AdminDashboard = ({ onLogout, userRole }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!showUserManagement && !showMenuManagement && !showGalleryManagement && !showQueueManagement && !showStudentManagement && !showBolsaFamilia) {
+      fetchSummary();
+      checkDailyNotification();
+    }
+  }, [selectedDate, showUserManagement, showMenuManagement, showGalleryManagement, showQueueManagement, showStudentManagement, showBolsaFamilia, fetchSummary, checkDailyNotification]);
 
   const handleResetDatabase = async () => {
     setResetting(true);

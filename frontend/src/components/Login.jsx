@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { toast } from 'sonner';
@@ -17,20 +17,20 @@ const Login = ({ onLogin, initialMode = 'login', onClose }) => {
 
   const logoUrl = 'https://customer-assets.emergentagent.com/job_student-meal-tracker/artifacts/s4xj649a_Logo%20Iema%20Pleno%20Mat%C3%B5es_20240308_104933_0000.png';
 
+  const fetchAvailableClasses = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/classes`);
+      setClasses(response.data);
+    } catch {
+      // Classes not available
+    }
+  }, []);
+
   useEffect(() => {
     if (isRegister && role === 'leader') {
       fetchAvailableClasses();
     }
-  }, [isRegister, role]);
-
-  const fetchAvailableClasses = async () => {
-    try {
-      const response = await axios.get(`${API}/classes`);
-      setClasses(response.data);
-    } catch (error) {
-      console.error('Erro ao carregar turmas');
-    }
-  };
+  }, [isRegister, role, fetchAvailableClasses]);
 
   const handleLogin = async (e) => {
     e.preventDefault();

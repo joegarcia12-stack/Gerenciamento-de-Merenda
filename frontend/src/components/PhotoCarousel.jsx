@@ -23,7 +23,6 @@ const PhotoCarousel = ({ photos }) => {
         img.src = photos[idx].url;
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photos, currentIndex]);
 
   useEffect(() => {

@@ -259,7 +259,7 @@ const StudentManagement = ({ onBack }) => {
               </p>
               {importResult.errors?.length > 0 && (
                 <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem', color: '#E65100', fontSize: '0.9rem' }}>
-                  {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                  {importResult.errors.map((err, i) => <li key={`err-${i}-${err.slice(0,10)}`}>{err}</li>)}
                 </ul>
               )}
               <button

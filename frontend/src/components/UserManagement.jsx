@@ -51,7 +51,9 @@ const UserManagement = ({ onBack, isMaster }) => {
     try {
       const res = await axios.get(`${API}/classes`, { headers: getAuthHeaders() });
       setClasses(res.data);
-    } catch {}
+    } catch {
+      toast.error('Erro ao carregar turmas');
+    }
   };
 
   const handleDeleteUser = async (userId, username) => {

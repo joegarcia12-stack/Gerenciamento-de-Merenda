@@ -43,8 +43,8 @@ const MenuManagement = ({ onBack }) => {
         });
         toast.success('Cardápio carregado com sucesso!');
       }
-    } catch (error) {
-      console.log('Nenhum cardápio existente encontrado para esta semana');
+    } catch {
+      // No existing menu for this week
     }
   };
 
